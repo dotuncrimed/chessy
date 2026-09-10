@@ -580,11 +580,15 @@ function sendChat(){
 function renderInbox() {
   const list = $('inboxList');
   if (!list) return;
+  
+  // Sort conversations by timestamp so the latest message is always at the top
   const keys = Object.keys(myInbox).sort((a,b) => (myInbox[b].ts||0) - (myInbox[a].ts||0));
+  
   if (!keys.length) {
-    list.innerHTML = '<p style="color:var(--dim);font-size:12px">No messages yet.</p>';
+    list.innerHTML = '<p style="color:var(--dim);font-size:12px">No messages yet. Click "Message" on any player to start a chat!</p>';
     return;
   }
+  
   let html = '';
   keys.forEach(otherToken => {
     const chat = myInbox[otherToken];
@@ -592,13 +596,23 @@ function renderInbox() {
     const pName = u ? escapeHtml(u.name) : 'Unknown';
     const unread = chat.unread || 0;
     const unreadBadge = unread > 0 ? '<span class="badge" style="background:var(--red);color:#fff;border-color:var(--red);margin-left:6px">'+unread+'</span>' : '';
-    const lastMsg = chat.last ? escapeHtml(chat.last.substring(0, 40)) + (chat.last.length > 40 ? '...' : '') : '';
+    
+    // Safely grab the latest message preview
+    let lastMsg = '';
+    if (chat.last && typeof chat.last === 'string') {
+        lastMsg = escapeHtml(chat.last.substring(0, 40)) + (chat.last.length > 40 ? '...' : '');
+    }
+    
     html += '<div class="item" style="cursor:pointer" data-act="open-chat" data-token="'+otherToken+'">' +
             '<div class="grow"><div class="nm">'+pName+unreadBadge+'</div><div class="sub">'+lastMsg+'</div></div>' +
             '</div>';
   });
+  
   list.innerHTML = html;
-  list.querySelectorAll('[data-act="open-chat"]').forEach(el => { el.onclick = () => openChat(el.dataset.token); });
+  
+  list.querySelectorAll('[data-act="open-chat"]').forEach(el => {
+    el.onclick = () => openChat(el.dataset.token);
+  });
 }
 
 function updateUnreadBadge() {
@@ -1170,7 +1184,7 @@ function renderGame(id,g){
   if(g.status==='finished'){sb.classList.add(g.result&&g.result.startsWith('½')?'draw':'win');sb.textContent='Game over — '+g.result}
   else if(!atLatest){sb.textContent='Reviewing move '+curIdx+' of '+(g.moves?g.moves.length:0)}
   else if(canMove){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(myColor==='w'?'White':'Black')+')'}
-  else if(g.status==='playing'){sb.textContent=g.vsAI?'Computer is thinking… (Blunder Mode)':'Waiting for '+(g.turn==='w'?topName:botName)+' to move…'}
+     else if(g.status==='playing'){        var turnName = g.turn === 'w' ? (g.white ? escapeHtml(g.white.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—')) : (g.black ? escapeHtml(g.black.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—'));        sb.textContent = g.vsAI ? 'Computer is thinking… (Blunder Mode)' : 'Waiting for ' + turnName + ' to move…';    }
   else{sb.textContent='Waiting for an opponent to join…'}
   $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';
   const specs=g.spectators||{};
