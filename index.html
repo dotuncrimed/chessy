@@ -771,11 +771,20 @@ function cancelGame(id){
 }
 
 function checkForChallenge(){
+  // If the challenge game was canceled/deleted, close the popup
+  if(activeChallengeId && !allGames[activeChallengeId]){
+    activeChallengeId=null;
+    $('incomingModal').classList.add('hidden');
+  }
+
   if(activeChallengeId)return;
+
   for(var id in allGames){
     var g=allGames[id];
+
     if(g.status==='waiting'&&g.challengedToken===token&&!dismissedChallenges[id]){
-      showIncomingChallenge(id,g);break;
+      showIncomingChallenge(id,g);
+      break;
     }
   }
 }
@@ -986,9 +995,56 @@ function applyAIMove(gameId, moveData, humanColor, shouldBlunder){
       }
   });
 }
+function cleanupStaleOpenGames(){
+  if(!allGames || Object.keys(allUsers).length===0) return;
 
-db.ref('users').on('value',s=>{allUsers=s.val()||{};render()});
-db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();render()});
+  const now = serverNow();
+
+  for(const id in allGames){
+    const g=allGames[id];
+
+    if(!g || g.vsAI) continue;
+
+    // Only clean up open waiting games
+    if(g.status !== 'waiting') continue;
+
+    // Give newly created games a small grace period
+    if(g.createdAt && now - g.createdAt < 20000) continue;
+
+    const owner = g.white || g.black;
+
+    // If game has no owner, remove it
+    if(!owner){
+      db.ref('games/'+id).remove();
+      continue;
+    }
+
+    const ownerUser = allUsers[owner.token];
+
+    // If owner is offline, remove the open game
+    if(!ownerUser || !isOnline(ownerUser)){
+      db.ref('games/'+id).transaction(cur=>{
+        if(!cur) return;
+        if(cur.status !== 'waiting') return;
+        return null;
+      });
+    }
+  }
+}
+db.ref('users').on('value',s=>{
+  allUsers=s.val()||{};
+  cleanupStaleOpenGames();
+  render();
+});
+
+db.ref('games').on('value',s=>{
+  allGames=s.val()||{};
+  myGameId=findMyGame();
+  checkForChallenge();
+  maybeTriggerAI();
+  cleanupStaleOpenGames();
+  render();
+});
 
 function goToGame(id){viewGameId=id;viewReviewIndex=null;updateSpectating(id);setChatGame(id);render()}
 function goToLobby(){updateSpectating(null);setChatGame(null);viewGameId=null;setInGame(null);render()}
@@ -1102,27 +1158,79 @@ function renderPlayersList(){
 
 function renderGameList(){
   const gl=$('gameList');gl.innerHTML='';
-  const gids=Object.keys(allGames).filter(id=>!allGames[id].vsAI&&(!allGames[id].challengedToken||allGames[id].challengedToken===token)).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));
-  if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet.</p>';return}
+
+  const gids=Object.keys(allGames).filter(id=>{
+    const g=allGames[id];
+
+    if(!g || g.vsAI) return false;
+
+    // Do not show finished or closed games in Open Games
+    if(g.status==='finished' || g.status==='closed') return false;
+
+    // Hide private challenges unless they are for me
+    if(g.challengedToken && g.challengedToken!==token) return false;
+
+    // Hide waiting games if the creator is offline
+    if(g.status==='waiting'){
+      const owner=g.white||g.black;
+      if(owner && allUsers[owner.token] && !isOnline(allUsers[owner.token])) return false;
+    }
+
+    return true;
+  }).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));
+
+  if(!gids.length){
+    gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet — create one above.</p>';
+    return;
+  }
+
   gids.forEach(id=>{
-    const g=allGames[id];const div=document.createElement('div');div.className='item';
+    const g=allGames[id];
+    const div=document.createElement('div');
+    div.className='item';
+
     const iamPlayer=(g.white&&g.white.token===token)||(g.black&&g.black.token===token);
+
     const wName=g.white?escapeHtml(g.white.name||'Player'):'—';
     const bName=g.black?escapeHtml(g.black.name||'Player'):'Waiting…';
+
     let badge='';
     if(g.status==='waiting')badge='<span class="badge wait">waiting</span>';
     if(g.status==='playing')badge='<span class="badge play">playing</span>';
-    if(g.status==='finished')badge='<span class="badge">finished</span>';
     if(g.timeControl)badge+=' <span class="badge">'+Math.round(g.timeControl/60)+'min</span>';
+
     div.innerHTML='<div class="grow"><div class="nm" style="cursor:default">'+wName+' <span style="color:var(--dim)">vs</span> '+bName+'</div><div class="sub">'+(g.moves?g.moves.length:0)+' moves</div></div>'+badge;
+
     if(iamPlayer){
-      if(g.status==='waiting'){const cb=document.createElement('button');cb.className='btn sm danger';cb.textContent='Cancel';cb.onclick=function(){cancelGame(id)};div.appendChild(cb)}
-      else{const cb=document.createElement('button');cb.className='btn sm primary';cb.textContent='Continue';cb.onclick=function(){goToGame(id)};div.appendChild(cb)}
-    }else{
-      if(g.status==='waiting'){const jb=document.createElement('button');jb.className='btn sm primary';jb.textContent='Join';jb.onclick=function(){joinGame(id)};div.appendChild(jb)}
-      else if(g.status==='playing'){const wb=document.createElement('button');wb.className='btn sm';wb.textContent='Watch';wb.onclick=function(){goToGame(id)};div.appendChild(wb)}
-      else if(g.status==='finished'){const ob=document.createElement('button');ob.className='btn sm';ob.textContent='Review';ob.onclick=function(){goToGame(id)};div.appendChild(ob)}
+      if(g.status==='waiting'){
+        const cb=document.createElement('button');
+        cb.className='btn sm danger';
+        cb.textContent='Cancel';
+        cb.onclick=function(){cancelGame(id)};
+        div.appendChild(cb);
+      } else {
+        const cb=document.createElement('button');
+        cb.className='btn sm primary';
+        cb.textContent='Continue';
+        cb.onclick=function(){goToGame(id)};
+        div.appendChild(cb);
+      }
+    } else {
+      if(g.status==='waiting'){
+        const jb=document.createElement('button');
+        jb.className='btn sm primary';
+        jb.textContent='Join';
+        jb.onclick=function(){joinGame(id)};
+        div.appendChild(jb);
+      } else if(g.status==='playing'){
+        const wb=document.createElement('button');
+        wb.className='btn sm';
+        wb.textContent='Watch';
+        wb.onclick=function(){goToGame(id)};
+        div.appendChild(wb);
+      }
     }
+
     gl.appendChild(div);
   });
 }
