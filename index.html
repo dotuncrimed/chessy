@@ -1654,7 +1654,7 @@ $('practiceBtn').onclick=startPractice;
 $('profileClose').onclick=function(){$('profileModal').classList.add('hidden')};
 $('backToInbox').onclick=closeChatView;
 $('pmSendBtn').onclick=sendPM;
-$('pmInput').addEventListener('keydown', e => { if(e.key === 'Enter') { sendPM(); e.preventDefault(); } });
+$('pmInput').addEventListener('keydown', function(e){   if(e.key === 'Enter' && !e.isComposing){     e.preventDefault();     sendPM();   } });  $('chatInput').addEventListener('keydown', function(e){   if(e.key === 'Enter' && !e.isComposing){     e.preventDefault();     sendChat();   } });
 
 $('createColorSeg').addEventListener('click',e=>{
   const c=e.target.dataset.c;if(!c)return;
