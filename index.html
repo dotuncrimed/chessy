@@ -170,10 +170,16 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       <div class="card" id="practiceCard">
         <h2>🎯 Practice vs Computer</h2>
         <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Blunder Mode active until <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>. Wins earn +50 to +100 ELO.</p>
-        <div class="opt-group"><div class="opt-label">PLAY AS</div>
+        
+        <!-- NEW: Resume Area -->
+        <div id="resumePracticeArea" style="display:none; margin-bottom:14px;">
+            <button class="btn primary" id="resumePracticeBtn" style="width:100%; background:var(--good); border-color:var(--good); color:#0a1712; font-size:14px; padding:12px;">▶ Resume Active Game</button>
+        </div>
+
+        <div class="opt-group"><div class="opt-label">PLAY AS (For New Game)</div>
           <div class="seg" id="practiceColorSeg"><button data-c="w" class="on">White</button><button data-c="b">Black</button></div>
         </div>
-        <button class="btn primary" id="practiceBtn" style="width:100%">Start practice</button>
+        <button class="btn primary" id="practiceBtn" style="width:100%">Start New Practice</button>
       </div>
     </div>
 
@@ -699,14 +705,36 @@ function findMyGame(){for(const id in allGames){const g=allGames[id];if(!g.vsAI&
 function findPracticeGame(){for(const id in allGames){const g=allGames[id];if(g.vsAI&&g.status==='playing'&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token)))return id}return null}
 
 function startPractice(){
-  var existing=findPracticeGame();
-  if(existing){goToGame(existing);return}
-  sfInit();
-  const id=db.ref('games').push().key;const me={token,name};
-  let white=null,black=null;
-  if(practiceColor==='w')white=me;else black=me;
-  db.ref('games/'+id).set({status:'playing',vsAI:true,white,black,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo(),timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});
-  goToGame(id);setInGame(id);
+  var existing = findPracticeGame();
+  
+  var startNew = function() {
+      sfInit();
+      const id=db.ref('games').push().key;const me={token,name};
+      let white=null,black=null;
+      if(practiceColor==='w')white=me;else black=me;
+      db.ref('games/'+id).set({status:'playing',vsAI:true,white,black,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo(),timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});
+      goToGame(id);setInGame(id);
+  };
+
+  if(existing){
+    if(!confirm("You have an active practice game. Do you want to abandon it and start a new one?")) {
+      return; // User cancelled
+    }
+    abandonGame(existing).then(startNew);
+  } else {
+    startNew();
+  }
+}
+
+// NEW FUNCTION: Tags the game as finished/abandoned
+function abandonGame(id){
+  return db.ref('games/'+id).transaction(g=>{
+    if(!g) return;
+    if(g.status !== 'playing' && g.status !== 'waiting') return;
+    g.status = 'finished';
+    g.result = '0-0 · Game abandoned by player';
+    return g;
+  });
 }
 function createOpenGame(){
   const id=db.ref('games').push().key;const me={token,name};
@@ -998,9 +1026,35 @@ function render(){
   if(clockInterval){clearInterval(clockInterval);clockInterval=null}
 }
 
+function renderPracticeTab() {
+  var existing = findPracticeGame();
+  var resumeArea = $('resumePracticeArea');
+  var resumeBtn = $('resumePracticeBtn');
+  var practiceBtn = $('practiceBtn');
+  
+  if(existing) {
+    if(resumeArea) resumeArea.style.display = 'block';
+    if(resumeBtn) resumeBtn.onclick = function() { goToGame(existing); };
+    
+    if(practiceBtn) {
+        practiceBtn.textContent = '⚠️ Abandon & Start New';
+        practiceBtn.classList.remove('primary');
+        practiceBtn.classList.add('danger');
+    }
+  } else {
+    if(resumeArea) resumeArea.style.display = 'none';
+    if(practiceBtn) {
+        practiceBtn.textContent = 'Start New Practice';
+        practiceBtn.classList.add('primary');
+        practiceBtn.classList.remove('danger');
+    }
+  }
+}
+  
 function renderLobby(){
   renderPlayersList();
   renderGameList();
+  renderPracticeTab(); // ADD THIS LINE
 }
 
 function renderPlayersList(){
@@ -1017,7 +1071,7 @@ function renderPlayersList(){
     let actionHtml='';
     if(isMe){
       actionHtml='<span class="badge me">YOU</span>';
-    } else if(activeGameId){
+    } else if(activeGameId && online){
       actionHtml='<button class="btn sm" data-act="watch" data-gid="'+activeGameId+'">👁 Watch</button> ';
       actionHtml+='<button class="btn sm" data-act="pm" data-token="'+u.token+'" data-name="'+escapeHtml(u.name)+'">✉</button>';
     } else if(online){
