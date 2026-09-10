@@ -698,6 +698,91 @@ function resultForPlayer(g, playerToken){
   if(blackWon)return isWhite?'loss':'win';
   return null;
 }
+
+  let inboxRepairRunning = false;
+
+function loadExistingConversations(){
+  if(!name || inboxRepairRunning) return;
+
+  inboxRepairRunning = true;
+
+  db.ref('users/' + token + '/chats').once('value').then(inboxSnap => {
+    const existing = inboxSnap.val() || {};
+
+    return db.ref('dms').once('value').then(dmsSnap => {
+      return {
+        existing: existing,
+        dms: dmsSnap.val() || {}
+      };
+    });
+  }).then(data => {
+    const existing = data.existing;
+    const dms = data.dms;
+    const updates = {};
+
+    Object.keys(dms).forEach(chatId => {
+      const msgs = dms[chatId];
+
+      if(!msgs || typeof msgs !== 'object') return;
+
+      const arr = Object.entries(msgs)
+        .map(([key, val]) => Object.assign({key: key}, val))
+        .sort((a,b) => (a.ts||0) - (b.ts||0) || String(a.key).localeCompare(String(b.key)));
+
+      if(!arr.length) return;
+
+      let other = null;
+
+      // Try to find the other user from the messages
+      for(let i = arr.length - 1; i >= 0; i--){
+        const m = arr[i];
+
+        if(m.f === token){
+          other = m.t;
+          break;
+        }
+
+        if(m.t === token){
+          other = m.f;
+          break;
+        }
+      }
+
+      // Fallback: find other user by matching chatId
+      if(!other){
+        for(const uid in allUsers){
+          if(uid !== token && [token, uid].sort().join('_') === chatId){
+            other = uid;
+            break;
+          }
+        }
+      }
+
+      if(!other) return;
+      if(existing[other] || updates[other]) return;
+
+      const last = arr[arr.length - 1];
+
+      updates[other] = {
+        ts: last.ts || Date.now(),
+        last: last.txt || '',
+        lastFrom: last.f || null,
+        unread: 0
+      };
+    });
+
+    if(Object.keys(updates).length){
+      console.log('Repairing missing inbox conversations:', Object.keys(updates).length);
+      return db.ref('users/' + token + '/chats').update(updates);
+    }
+
+  }).catch(err => {
+    console.error('Inbox repair failed:', err);
+  }).then(() => {
+    inboxRepairRunning = false;
+  });
+}
+
 function joinSpectators(gameId){var ref=db.ref('games/'+gameId+'/spectators/'+token);ref.onDisconnect().remove();ref.set(name)}
 function leaveSpectators(gameId){db.ref('games/'+gameId+'/spectators/'+token).remove()}
 function updateSpectating(gameId){
@@ -1697,6 +1782,16 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
   });
 });
 
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.tab === 'messages'){
+      renderInbox();
+      updateUnreadBadge();
+      loadExistingConversations();
+    }
+  });
+});
+
 document.querySelectorAll('.panel>header').forEach(h=>{
   h.addEventListener('click',()=>h.parentElement.classList.toggle('closed'));
 });
@@ -1718,6 +1813,8 @@ function init(){
       renderInbox();
       updateUnreadBadge();
     });
+
+    loadExistingConversations();
   }
   render();
 }
