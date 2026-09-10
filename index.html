@@ -169,9 +169,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard">
         <h2>🎯 Practice vs Computer</h2>
-        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Blunder Mode active until <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>. Wins earn +50 to +100 ELO.</p>
+        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Blunder Mode active until <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>.</p>
         
-        <!-- NEW: Resume Area -->
         <div id="resumePracticeArea" style="display:none; margin-bottom:14px;">
             <button class="btn primary" id="resumePracticeBtn" style="width:100%; background:var(--good); border-color:var(--good); color:#0a1712; font-size:14px; padding:12px;">▶ Resume Active Game</button>
         </div>
@@ -541,7 +540,7 @@ function getPlayerActiveGame(userToken){
 function resultForPlayer(g, playerToken){
   if(g.status!=='finished'||!g.result)return null;
   const r=g.result;
-  if(r.indexOf('½')>=0)return 'draw';
+  if(r.indexOf('½')>=0 || r.indexOf('0-0')>=0 || r.indexOf('abandoned')>=0)return 'draw';
   const whiteWon=r.indexOf('1-0')===0;
   const blackWon=r.indexOf('0-1')===0;
   const isWhite=g.white&&g.white.token===playerToken;
@@ -578,13 +577,12 @@ function sendChat(){
   input.value='';
 }
 
-/* ===== PRIVATE MESSAGING ===== */
 function renderInbox() {
   const list = $('inboxList');
   if (!list) return;
   const keys = Object.keys(myInbox).sort((a,b) => (myInbox[b].ts||0) - (myInbox[a].ts||0));
   if (!keys.length) {
-    list.innerHTML = '<p style="color:var(--dim);font-size:12px">No messages yet. Click "Message" on any player to start a chat!</p>';
+    list.innerHTML = '<p style="color:var(--dim);font-size:12px">No messages yet.</p>';
     return;
   }
   let html = '';
@@ -600,10 +598,7 @@ function renderInbox() {
             '</div>';
   });
   list.innerHTML = html;
-  
-  list.querySelectorAll('[data-act="open-chat"]').forEach(el => {
-    el.onclick = () => openChat(el.dataset.token);
-  });
+  list.querySelectorAll('[data-act="open-chat"]').forEach(el => { el.onclick = () => openChat(el.dataset.token); });
 }
 
 function updateUnreadBadge() {
@@ -611,22 +606,16 @@ function updateUnreadBadge() {
   Object.values(myInbox).forEach(c => { totalUnread += (c.unread || 0); });
   const badge = $('unreadBadge');
   if (!badge) return;
-  if (totalUnread > 0) {
-    badge.textContent = totalUnread;
-    badge.style.display = 'inline-block';
-  } else {
-    badge.style.display = 'none';
-  }
+  if (totalUnread > 0) { badge.textContent = totalUnread; badge.style.display = 'inline-block'; } 
+  else { badge.style.display = 'none'; }
 }
 
 function openChat(otherToken) {
   $('inboxList').style.display = 'none';
   $('inboxList').parentElement.querySelector('h2').style.display = 'none'; 
   $('chatView').classList.remove('hidden');
-  
   const u = allUsers[otherToken];
   $('chatWith').textContent = 'Chat with ' + (u ? u.name : 'Player');
-  
   if (activeChatRef) activeChatRef.off();
   activeChatOther = otherToken;
   const chatId = [token, otherToken].sort().join('_');
@@ -644,7 +633,6 @@ function openChat(otherToken) {
     $('pmChatList').innerHTML = html;
     $('pmChatList').scrollTop = $('pmChatList').scrollHeight;
   });
-  
   db.ref('users/' + token + '/chats/' + otherToken + '/unread').set(0);
 }
 
@@ -660,20 +648,16 @@ function sendPM() {
   const input = $('pmInput');
   const text = input.value.trim();
   if (!text || !activeChatOther) return;
-  
   const chatId = [token, activeChatOther].sort().join('_');
   const msgRef = db.ref('dms/' + chatId).push();
   const ts = firebase.database.ServerValue.TIMESTAMP;
   msgRef.set({ f: token, t: activeChatOther, txt: text, ts: ts });
-  
   db.ref('users/' + token + '/chats/' + activeChatOther).update({ ts: ts, last: text, unread: 0 });
-  
   const otherInboxRef = db.ref('users/' + activeChatOther + '/chats/' + token);
   otherInboxRef.transaction(current => {
     const unread = (current && current.unread) ? current.unread + 1 : 1;
     return { ts: ts, last: text, unread: unread };
   });
-  
   input.value = '';
 }
 
@@ -706,7 +690,6 @@ function findPracticeGame(){for(const id in allGames){const g=allGames[id];if(g.
 
 function startPractice(){
   var existing = findPracticeGame();
-  
   var startNew = function() {
       sfInit();
       const id=db.ref('games').push().key;const me={token,name};
@@ -715,18 +698,14 @@ function startPractice(){
       db.ref('games/'+id).set({status:'playing',vsAI:true,white,black,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo(),timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});
       goToGame(id);setInGame(id);
   };
-
   if(existing){
-    if(!confirm("You have an active practice game. Do you want to abandon it and start a new one?")) {
-      return; // User cancelled
-    }
+    if(!confirm("You have an active practice game. Do you want to abandon it and start a new one?")) return;
     abandonGame(existing).then(startNew);
   } else {
     startNew();
   }
 }
 
-// NEW FUNCTION: Tags the game as finished/abandoned
 function abandonGame(id){
   return db.ref('games/'+id).transaction(g=>{
     if(!g) return;
@@ -736,6 +715,7 @@ function abandonGame(id){
     return g;
   });
 }
+
 function createOpenGame(){
   const id=db.ref('games').push().key;const me={token,name};
   let white=null,black=null;
@@ -805,7 +785,53 @@ function getCurrentTimes(g){
   return{w,b};
 }
 
-// FIX 3: Fixed submitMove to safely update ELO *after* transaction commits
+// NEW ELO SYSTEM
+function calculateElo(playerElo, opponentElo, score) {
+    let K = 32;
+    if (playerElo >= 1200 && playerElo < 1800) K = 24;
+    else if (playerElo >= 1800) K = 16;
+    if (playerElo < 800) K = 40;
+    let expected = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+    let newElo = playerElo + K * (score - expected);
+    return Math.round(Math.max(100, newElo)); 
+}
+
+function processGameElo(gameId, g) {
+    if (g.eloProcessed) return;
+    db.ref('games/' + gameId + '/eloProcessed').set(true);
+
+    var result = g.result || '';
+    if (result.indexOf('abandoned') >= 0 || result.indexOf('0-0') >= 0) return;
+
+    if (g.vsAI) {
+        var humanColor = (g.white && g.white.token === token) ? 'w' : (g.black && g.black.token === token) ? 'b' : null;
+        if (!humanColor) return;
+        var humanScore = 0.5;
+        if (result.indexOf('½') >= 0) humanScore = 0.5;
+        else if (result.indexOf('White wins') >= 0 || result.indexOf('Black resign') >= 0 || result.indexOf('Black flagged') >= 0) humanScore = (humanColor === 'w') ? 1 : 0;
+        else if (result.indexOf('Black wins') >= 0 || result.indexOf('White resign') >= 0 || result.indexOf('White flagged') >= 0) humanScore = (humanColor === 'b') ? 1 : 0;
+        var currentElo = getMyElo();
+        var aiElo = currentElo; 
+        var newElo = calculateElo(currentElo, aiElo, humanScore);
+        db.ref('users/' + token + '/elo').set(newElo);
+    } else {
+        if (!g.white || !g.black) return;
+        var whiteToken = g.white.token;
+        var blackToken = g.black.token;
+        var whiteElo = (allUsers[whiteToken] && allUsers[whiteToken].elo) || 500;
+        var blackElo = (allUsers[blackToken] && allUsers[blackToken].elo) || 500;
+        var whiteScore = 0.5;
+        var blackScore = 0.5;
+        if (result.indexOf('½') >= 0) { whiteScore = 0.5; blackScore = 0.5; }
+        else if (result.indexOf('1-0') >= 0 || result.indexOf('White wins') >= 0 || result.indexOf('Black resign') >= 0 || result.indexOf('Black flagged') >= 0) { whiteScore = 1; blackScore = 0; }
+        else if (result.indexOf('0-1') >= 0 || result.indexOf('Black wins') >= 0 || result.indexOf('White resign') >= 0 || result.indexOf('White flagged') >= 0) { whiteScore = 0; blackScore = 1; }
+        var newWhiteElo = calculateElo(whiteElo, blackElo, whiteScore);
+        var newBlackElo = calculateElo(blackElo, whiteElo, blackScore);
+        db.ref('users/' + whiteToken + '/elo').set(newWhiteElo);
+        db.ref('users/' + blackToken + '/elo').set(newBlackElo);
+    }
+}
+
 function submitMove(m){
   var myColor = null;
   db.ref('games/'+viewGameId).transaction(g=>{
@@ -826,33 +852,28 @@ function submitMove(m){
     g.turn=st.turn;
     g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};
     const end=detectEnd(st);
-    if(end){g.status='finished';g.result=end;} // Removed updatePracticeElo from here!
+    if(end){g.status='finished';g.result=end;} 
     return g;
   }).then(function(result) {
       if (result.committed) {
           var newG = result.snapshot.val();
-          if (newG && newG.vsAI && newG.status === 'finished' && myColor) {
-              updatePracticeElo(newG, myColor);
-          }
+          if (newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(viewGameId, newG);
       }
   });
 }
 
 function resign(){
   if(!confirm('Resign this game?'))return;
-  var myColor = null;
   db.ref('games/'+viewGameId).transaction(g=>{
     if(!g||g.status!=='playing')return;
-    myColor=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
+    const myColor=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
     if(!myColor)return;
     g.status='finished';g.result=myColor==='w'?'0-1 · White resigns, Black wins':'1-0 · Black resigns, White wins';
     return g;
   }).then(function(result) {
       if (result.committed) {
           var newG = result.snapshot.val();
-          if (newG && newG.vsAI && newG.status === 'finished' && myColor) {
-              updatePracticeElo(newG, myColor);
-          }
+          if (newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(viewGameId, newG);
       }
   });
 }
@@ -864,13 +885,11 @@ function respondDraw(accept){
   }).then(function(result) {
       if (result.committed) {
           var newG = result.snapshot.val();
-          if (newG && newG.vsAI && newG.status === 'finished') {
-              var myColor = (newG.white&&newG.white.token===token)?'w':(newG.black&&newG.black.token===token)?'b':null;
-              if(myColor) updatePracticeElo(newG, myColor);
-          }
+          if (newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(viewGameId, newG);
       }
   });
 }
+
 function flagTime(loser){
   db.ref('games/'+viewGameId).transaction(g=>{
     if(!g||g.status!=='playing')return;
@@ -880,34 +899,13 @@ function flagTime(loser){
   }).then(function(result) {
       if (result.committed) {
           var newG = result.snapshot.val();
-          if (newG && newG.vsAI && newG.status === 'finished') {
-              var myColor = (newG.white&&newG.white.token===token)?'w':(newG.black&&newG.black.token===token)?'b':null;
-              if(myColor) updatePracticeElo(newG, myColor);
-          }
+          if (newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(viewGameId, newG);
       }
   });
 }
-function updatePracticeElo(g,humanColor){
-  var result=g.result||'';var humanScore=0.5;
-  if(result.indexOf('½')>=0)humanScore=0.5;
-  else if(result.indexOf('White wins')>=0)humanScore=(humanColor==='w')?1:0;
-  else if(result.indexOf('Black wins')>=0)humanScore=(humanColor==='b')?1:0;
-  else if(result.indexOf('White resign')>=0)humanScore=(humanColor==='w')?0:1;
-  else if(result.indexOf('Black resign')>=0)humanScore=(humanColor==='b')?0:1;
-  var elo=getMyElo();var newElo;
-  if(humanScore===1){
-    var matAdv=getMaterialAdvantage(fromFEN(g.fen));
-    if(humanColor==='b')matAdv=-matAdv;
-    var bonus=clamp(Math.round(matAdv/16),0,50);
-    newElo=elo+50+bonus;
-  }else if(humanScore===0){newElo=elo-40;}
-  else{newElo=elo+10;}
-  newElo=clamp(newElo,100,3200);
-  db.ref('users/'+token+'/elo').set(newElo);
-}
+
 function getBlunderChance(){const elo=getMyElo();if(elo>=1350)return 0;return clamp((1350-elo)/1350,0.05,0.5)}
 
-// FIX 4: Added Fallback Brain just in case
 function getFallbackMove(st) {
     var legal = legalMoves(st);
     if (legal.length === 0) return null;
@@ -925,55 +923,44 @@ function getFallbackMove(st) {
     return legal[Math.floor(Math.random() * legal.length)];
 }
 
-// FIX 1: Replaced maybeTriggerAI to correctly find practice games
 function maybeTriggerAI(){
   var practiceId = findPracticeGame();
   if(!practiceId) return;
   var g = allGames[practiceId];
   if(!g || !g.vsAI || g.status !== 'playing') return;
-  
   var myColor = (g.white && g.white.token === token) ? 'w' : (g.black && g.black.token === token) ? 'b' : null;
   if(!myColor) return;
   var aiColor = opp(myColor);
   if(g.turn !== aiColor) return;
   if(sfBusy) return;
-  
   sfBusy = true;
   var shouldBlunder = Math.random() < getBlunderChance();
-  
   if (sfWorker && sfReady) {
       sfRequestMove(g.fen, getMyElo(), function(uci){
           applyAIMove(practiceId, uci, myColor, shouldBlunder);
       });
   } else {
-      console.warn("Stockfish not ready. Using Fallback AI.");
       var st = fromFEN(g.fen);
       var fallbackMove = getFallbackMove(st);
       applyAIMove(practiceId, fallbackMove, myColor, shouldBlunder);
   }
 }
 
-// FIX 2: Replaced applyAIMove to safely handle UCI strings/objects and update ELO outside transaction
 function applyAIMove(gameId, moveData, humanColor, shouldBlunder){
   db.ref('games/'+gameId).transaction(function(g){
     if(!g || g.status !== 'playing') return;
     var aiColor = opp(humanColor);
     if(g.turn !== aiColor) return;
-    
     var st = fromFEN(g.fen);
     var match = null;
-    
     if (moveData && typeof moveData === 'string') match = uciToInternal(st, moveData);
     else if (moveData && typeof moveData === 'object') match = moveData;
-    
     if (!match || shouldBlunder) match = getFallbackMove(st);
     if (!match) return;
-    
     var san = toSAN(st, match); makeM(st, match);
     g.fen = toFEN(st); g.moves = (g.moves || []).concat([san]);
     g.fens = (g.fens || [START_FEN]).concat([g.fen]);
     g.turn = st.turn; g.lastMove = { fr: match.fr, fc: match.fc, tr: match.tr, tc: match.tc };
-    
     var end = detectEnd(st);
     if (end) { g.status = 'finished'; g.result = end; } 
     return g;
@@ -981,9 +968,7 @@ function applyAIMove(gameId, moveData, humanColor, shouldBlunder){
       sfBusy = false; 
       if(result.committed) {
           var newG = result.snapshot.val();
-          if(newG && newG.vsAI && newG.status === 'finished' && humanColor) {
-              updatePracticeElo(newG, humanColor);
-          }
+          if(newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(gameId, newG);
       }
   });
 }
@@ -1026,16 +1011,20 @@ function render(){
   if(clockInterval){clearInterval(clockInterval);clockInterval=null}
 }
 
+function renderLobby(){
+  renderPlayersList();
+  renderGameList();
+  renderPracticeTab();
+}
+
 function renderPracticeTab() {
   var existing = findPracticeGame();
   var resumeArea = $('resumePracticeArea');
   var resumeBtn = $('resumePracticeBtn');
   var practiceBtn = $('practiceBtn');
-  
   if(existing) {
     if(resumeArea) resumeArea.style.display = 'block';
     if(resumeBtn) resumeBtn.onclick = function() { goToGame(existing); };
-    
     if(practiceBtn) {
         practiceBtn.textContent = '⚠️ Abandon & Start New';
         practiceBtn.classList.remove('primary');
@@ -1049,12 +1038,6 @@ function renderPracticeTab() {
         practiceBtn.classList.remove('danger');
     }
   }
-}
-  
-function renderLobby(){
-  renderPlayersList();
-  renderGameList();
-  renderPracticeTab(); // ADD THIS LINE
 }
 
 function renderPlayersList(){
@@ -1102,10 +1085,11 @@ function renderPlayersList(){
     list.appendChild(div);
   });
 }
+
 function renderGameList(){
   const gl=$('gameList');gl.innerHTML='';
   const gids=Object.keys(allGames).filter(id=>!allGames[id].vsAI&&(!allGames[id].challengedToken||allGames[id].challengedToken===token)).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));
-  if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet — create one above.</p>';return}
+  if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet.</p>';return}
   gids.forEach(id=>{
     const g=allGames[id];const div=document.createElement('div');div.className='item';
     const iamPlayer=(g.white&&g.white.token===token)||(g.black&&g.black.token===token);
@@ -1188,7 +1172,7 @@ function renderGame(id,g){
   else if(canMove){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(myColor==='w'?'White':'Black')+')'}
   else if(g.status==='playing'){sb.textContent=g.vsAI?'Computer is thinking… (Blunder Mode)':'Waiting for '+(g.turn==='w'?topName:botName)+' to move…'}
   else{sb.textContent='Waiting for an opponent to join…'}
-  $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating — read only (chat enabled)</span>':'';
+  $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';
   const specs=g.spectators||{};
   let specHtml='';let specCount=0;
   for(var tk in specs){if(specs[tk]){var displayName=(tk===token)?escapeHtml(specs[tk])+' (You)':escapeHtml(specs[tk]);specHtml+='<div class="spec-item">'+displayName+'</div>';specCount++}}
@@ -1347,7 +1331,6 @@ function init(){
       return u;
     });
     setupPresence();
-    
     db.ref('users/' + token + '/chats').on('value', snap => {
       myInbox = snap.val() || {};
       renderInbox();
