@@ -590,25 +590,36 @@ function uciToInternal(st,uci){
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 let sfWorker=null,sfReady=false,sfBestmoveCb=null,sfBusy=false;
-function sfInit(){
-  if(sfWorker) { return; }
-  if(typeof SF_BASE64==='undefined'){return}
-  try{
-    var bin=atob(SF_BASE64);var bytes=new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-    var url=URL.createObjectURL(new Blob([bytes],{type:'application/javascript'}));
-    sfWorker=new Worker(url);
-    sfWorker.onerror = function(e) { console.error("❌ SF Worker Fatal Error:", e.message, e); };
-    sfWorker.onmessage=function(e){
-        var data = e.data;
-        if (typeof data !== 'string') return;
-        var lines = data.split('\n');
-        for(var i=0; i<lines.length; i++){
-            sfOnMsg(lines[i]);
+function init(){
+  if(!name){
+    var n=prompt('Pick your name:','Player'+Math.floor(Math.random()*1000));
+    if(n&&n.trim()){name=n.trim().slice(0,20);localStorage.setItem('mp_name',name)}
+  }
+  if(name){
+    db.ref('users/'+token).transaction(u=>{
+      if(!u) {
+          u = { name: name, elo: 900 };
+      } else {
+          u.name = name;
+          if(u.elo === undefined || u.elo === null) u.elo = 900;
+      }
+      return u;
+    }).then(result => {
+        if(result.committed) {
+            console.log("✅ User profile synced. Current DB ELO:", result.snapshot.val().elo);
         }
-    };
-    sfWorker.postMessage('uci');
-  }catch(e){ console.error("SF init failed:", e); }
+    });
+    
+    setupPresence();
+    db.ref('users/' + token + '/chats').on('value', snap => {
+      myInbox = snap.val() || {};
+      renderInbox();
+      updateUnreadBadge();
+    });
+
+    loadExistingConversations();
+  }
+  render();
 }
 function sfOnMsg(line){
   if(!line)return;
@@ -663,7 +674,15 @@ function isOnline(u) {
 
 function $(id){return document.getElementById(id)}
 function show(screen){['lobby','gameScreen'].forEach(s=>$(s).classList.add('hidden'));$(screen).classList.remove('hidden')}
-function getMyElo(){return (allUsers[token]&&allUsers[token].elo)||900}
+function getMyElo(){
+    // If Firebase has loaded the data, use it and save it to browser memory
+    if(allUsers[token] && allUsers[token].elo !== undefined) {
+        localStorage.setItem('mp_elo', allUsers[token].elo);
+        return allUsers[token].elo;
+    }
+    // If Firebase hasn't loaded yet, read from browser memory instantly
+    return parseInt(localStorage.getItem('mp_elo')) || 900;
+}
 
 function setupPresence() {
   const uref = db.ref('users/' + token);
@@ -1219,11 +1238,18 @@ function calculateElo(playerElo, opponentElo, score) {
 }
 
 function processGameElo(gameId, g) {
-    if (g.eloProcessed) return;
+    console.log("🔥 processGameElo triggered for game:", gameId);
+    if (g.eloProcessed) {
+        console.log("⚠️ Already processed.");
+        return;
+    }
     db.ref('games/' + gameId + '/eloProcessed').set(true);
 
     var result = g.result || '';
-    if (result.indexOf('abandoned') >= 0 || result.indexOf('0-0') >= 0) return;
+    if (result.indexOf('abandoned') >= 0 || result.indexOf('0-0') >= 0) {
+        console.log("⚠️ Game was abandoned. No ELO change.");
+        return;
+    }
 
     if (g.vsAI) {
         var humanColor = (g.white && g.white.token === token) ? 'w' : (g.black && g.black.token === token) ? 'b' : null;
@@ -1232,24 +1258,40 @@ function processGameElo(gameId, g) {
         if (result.indexOf('½') >= 0) humanScore = 0.5;
         else if (result.indexOf('White wins') >= 0 || result.indexOf('Black resign') >= 0 || result.indexOf('Black flagged') >= 0) humanScore = (humanColor === 'w') ? 1 : 0;
         else if (result.indexOf('Black wins') >= 0 || result.indexOf('White resign') >= 0 || result.indexOf('White flagged') >= 0) humanScore = (humanColor === 'b') ? 1 : 0;
+        
         var currentElo = getMyElo();
         var aiElo = currentElo; 
         var newElo = calculateElo(currentElo, aiElo, humanScore);
-        db.ref('users/' + token + '/elo').set(newElo);
+        localStorage.setItem('mp_elo', newElo); // INSTANT CACHE
+        
+        console.log("🤖 PvE Match! Old ELO:", currentElo, "| Score:", humanScore, "| New ELO:", newElo);
+        db.ref('users/' + token + '/elo').set(newElo).then(() => {
+            console.log("✅ Successfully saved new ELO to Firebase!");
+        }).catch(err => {
+            console.error("❌ Failed to save ELO to Firebase:", err);
+        });
     } else {
         if (!g.white || !g.black) return;
         var whiteToken = g.white.token;
         var blackToken = g.black.token;
-        var whiteElo = (allUsers[whiteToken] && allUsers[whiteToken].elo) || 900;
-        var blackElo = (allUsers[blackToken] && allUsers[blackToken].elo) || 900;
+        var newWhiteElo = calculateElo(whiteElo, blackElo, whiteScore);
+        var newBlackElo = calculateElo(blackElo, whiteElo, blackScore);
+        
+        // INSTANT CACHE for the current player
+        if(whiteToken === token) localStorage.setItem('mp_elo', newWhiteElo);
+        if(blackToken === token) localStorage.setItem('mp_elo', newBlackElo);
 
         var whiteScore = 0.5;
         var blackScore = 0.5;
         if (result.indexOf('½') >= 0) { whiteScore = 0.5; blackScore = 0.5; }
         else if (result.indexOf('1-0') >= 0 || result.indexOf('White wins') >= 0 || result.indexOf('Black resign') >= 0 || result.indexOf('Black flagged') >= 0) { whiteScore = 1; blackScore = 0; }
         else if (result.indexOf('0-1') >= 0 || result.indexOf('Black wins') >= 0 || result.indexOf('White resign') >= 0 || result.indexOf('White flagged') >= 0) { whiteScore = 0; blackScore = 1; }
+        
         var newWhiteElo = calculateElo(whiteElo, blackElo, whiteScore);
         var newBlackElo = calculateElo(blackElo, whiteElo, blackScore);
+        
+        console.log("⚔️ PvP Match! White:", whiteElo, "->", newWhiteElo, "| Black:", blackElo, "->", newBlackElo);
+        
         db.ref('users/' + whiteToken + '/elo').set(newWhiteElo);
         db.ref('users/' + blackToken + '/elo').set(newBlackElo);
     }
