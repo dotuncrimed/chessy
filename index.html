@@ -282,6 +282,14 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 @media(max-width:560px){
   .msg-bubble{max-width:88%}
 }
+.profile-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.profile-stat-box{background:#0d1d13;border:1px solid var(--line);border-radius:8px;padding:10px}
+.profile-stat-title{font:800 10px Manrope,sans-serif;color:var(--dim);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
+.profile-stat-nums{display:flex;justify-content:space-around;font:600 13px 'IBM Plex Mono',monospace}
+.profile-games-scroll{max-height:240px;overflow-y:auto;padding-right:6px;margin-top:8px}
+.profile-games-scroll::-webkit-scrollbar{width:6px}
+.profile-games-scroll::-webkit-scrollbar-track{background:transparent}
+.profile-games-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 </style></head><body>
 <header class="top">
   <div class="crest sym">&#x265E;&#xFE0E;</div>
@@ -665,8 +673,7 @@ function setupPresence() {
       uref.update({ 
         name: name, 
         online: true, 
-        lastSeen: firebase.database.ServerValue.TIMESTAMP, 
-        elo: getMyElo() 
+        lastSeen: firebase.database.ServerValue.TIMESTAMP
       });
     }
   });
@@ -1024,10 +1031,54 @@ function sendPM() {
 function openProfile(userToken){
   const u=allUsers[userToken];if(!u)return;
   let html='<h2 style="color:var(--gold);font:400 22px Marcellus,serif;margin-bottom:6px">'+escapeHtml(u.name||'Player')+'</h2>';
-  html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:12px">ELO '+(u.elo||900)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';
-  const theirGames=Object.keys(allGames).filter(id=>{const g=allGames[id];return(g.white&&g.white.token===userToken)||(g.black&&g.black.token===userToken)}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0)).slice(0,20);
-  html+='<h3 style="font:400 15px Marcellus,serif;color:var(--gold-hi);margin:12px 0 8px">Recent Games</h3>';
-  if(!theirGames.length)html+='<div style="color:var(--dim);font-size:12px">No games yet</div>';
+  html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:14px">ELO '+(u.elo||900)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';
+  
+  // 1. Calculate Stats
+  let pvp = {w:0, l:0, d:0};
+  let pve = {w:0, l:0, d:0};
+  let totalGames = 0;
+
+  Object.keys(allGames).forEach(id => {
+    const g = allGames[id];
+    if(!g || g.status !== 'finished') return;
+    if(!((g.white && g.white.token === userToken) || (g.black && g.black.token === userToken))) return;
+    
+    totalGames++;
+    const res = resultForPlayer(g, userToken);
+    if(!res) return;
+    
+    if(g.vsAI) {
+        if(res === 'win') pve.w++;
+        else if(res === 'loss') pve.l++;
+        else pve.d++;
+    } else {
+        if(res === 'win') pvp.w++;
+        else if(res === 'loss') pvp.l++;
+        else pvp.d++;
+    }
+  });
+
+  // 2. Render Stats Grid
+  html += '<div class="profile-stats-grid">';
+  html += '<div class="profile-stat-box">';
+  html += '<div class="profile-stat-title">Vs Players</div>';
+  html += '<div class="profile-stat-nums"><span style="color:var(--good)">'+pvp.w+'W</span><span style="color:var(--dim)">'+pvp.d+'D</span><span style="color:#f0908c">'+pvp.l+'L</span></div>';
+  html += '</div>';
+  html += '<div class="profile-stat-box">';
+  html += '<div class="profile-stat-title">Vs Computer</div>';
+  html += '<div class="profile-stat-nums"><span style="color:var(--good)">'+pve.w+'W</span><span style="color:var(--dim)">'+pve.d+'D</span><span style="color:#f0908c">'+pve.l+'L</span></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // 3. Recent Games (Limited to 5)
+  const theirGames=Object.keys(allGames).filter(id=>{const g=allGames[id];return(g.white&&g.white.token===userToken)||(g.black&&g.black.token===userToken)}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0)).slice(0,5);
+  
+  html+='<h3 style="font:400 15px Marcellus,serif;color:var(--gold-hi);margin:12px 0 4px">Recent Games ('+totalGames+' Total)</h3>';
+  
+  // 4. Wrap in Scroller
+  html += '<div class="profile-games-scroll">';
+  if(!theirGames.length) html+='<div style="color:var(--dim);font-size:12px;padding:10px 0;">No games yet</div>';
+  
   theirGames.forEach(id=>{
     const g=allGames[id];
     const wName=g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—');
@@ -1040,6 +1091,8 @@ function openProfile(userToken){
     const statusTxt=g.status==='finished'?(g.result||'finished'):(g.status+(g.vsAI?' · practice':''));
     html+='<div class="item" style="margin-bottom:6px"><div class="grow"><div class="nm" style="cursor:default">'+wName+' <span style="color:var(--dim)">vs</span> '+bName+resBadge+'</div><div class="sub">'+escapeHtml(statusTxt)+'</div></div><button class="btn sm" onclick="viewFromProfile(\''+id+'\')">View</button></div>';
   });
+  html += '</div>'; // close scroll
+  
   $('profileContent').innerHTML=html;
   $('profileModal').classList.remove('hidden');
 }
