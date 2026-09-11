@@ -621,6 +621,28 @@ function init(){
   }
   render();
 }
+
+function sfInit(){
+  if(sfWorker) { return; }
+  if(typeof SF_BASE64==='undefined'){return}
+  try{
+    var bin=atob(SF_BASE64);var bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    var url=URL.createObjectURL(new Blob([bytes],{type:'application/javascript'}));
+    sfWorker=new Worker(url);
+    sfWorker.onerror = function(e) { console.error("❌ SF Worker Fatal Error:", e.message, e); };
+    sfWorker.onmessage=function(e){
+        var data = e.data;
+        if (typeof data !== 'string') return;
+        var lines = data.split('\n');
+        for(var i=0; i<lines.length; i++){
+            sfOnMsg(lines[i]);
+        }
+    };
+    sfWorker.postMessage('uci');
+  }catch(e){ console.error("SF init failed:", e); }
+}
+
 function sfOnMsg(line){
   if(!line)return;
   if(line==='uciok'){sfWorker.postMessage('isready');return}
@@ -1274,12 +1296,8 @@ function processGameElo(gameId, g) {
         if (!g.white || !g.black) return;
         var whiteToken = g.white.token;
         var blackToken = g.black.token;
-        var newWhiteElo = calculateElo(whiteElo, blackElo, whiteScore);
-        var newBlackElo = calculateElo(blackElo, whiteElo, blackScore);
-        
-        // INSTANT CACHE for the current player
-        if(whiteToken === token) localStorage.setItem('mp_elo', newWhiteElo);
-        if(blackToken === token) localStorage.setItem('mp_elo', newBlackElo);
+        var whiteElo = (allUsers[whiteToken] && allUsers[whiteToken].elo) || 900;
+        var blackElo = (allUsers[blackToken] && allUsers[blackToken].elo) || 900;
 
         var whiteScore = 0.5;
         var blackScore = 0.5;
@@ -1290,6 +1308,10 @@ function processGameElo(gameId, g) {
         var newWhiteElo = calculateElo(whiteElo, blackElo, whiteScore);
         var newBlackElo = calculateElo(blackElo, whiteElo, blackScore);
         
+        // INSTANT CACHE for the current player
+        if(whiteToken === token) localStorage.setItem('mp_elo', newWhiteElo);
+        if(blackToken === token) localStorage.setItem('mp_elo', newBlackElo);
+
         console.log("⚔️ PvP Match! White:", whiteElo, "->", newWhiteElo, "| Black:", blackElo, "->", newBlackElo);
         
         db.ref('users/' + whiteToken + '/elo').set(newWhiteElo);
@@ -2110,28 +2132,5 @@ document.querySelectorAll('.tabbtn').forEach(btn=>{
 document.querySelectorAll('.panel>header').forEach(h=>{
   h.addEventListener('click',()=>h.parentElement.classList.toggle('closed'));
 });
-
-function init(){
-  if(!name){
-    var n=prompt('Pick your name:','Player'+Math.floor(Math.random()*1000));
-    if(n&&n.trim()){name=n.trim().slice(0,20);localStorage.setItem('mp_name',name)}
-  }
-  if(name){
-    db.ref('users/'+token).transaction(u=>{
-      if(!u)u={};u.name=name;
-      if(u.elo===undefined)u.elo=900;
-      return u;
-    });
-    setupPresence();
-    db.ref('users/' + token + '/chats').on('value', snap => {
-      myInbox = snap.val() || {};
-      renderInbox();
-      updateUnreadBadge();
-    });
-
-    loadExistingConversations();
-  }
-  render();
-}
 init();
 </script></body></html>
