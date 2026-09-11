@@ -319,7 +319,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard">
         <h2>🎯 Practice vs Computer</h2>
-        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Blunder Mode active until <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>.</p>
+        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Default AI Bot until <b style="color:var(--gold-hi)">1350 ELO</b>. Stockfish unlocks at <b style="color:var(--gold-hi)">1350 ELO</b>.
+ Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>.</p>
         
         <div id="resumePracticeArea" style="display:none; margin-bottom:14px;">
             <button class="btn primary" id="resumePracticeBtn" style="width:100%; background:var(--good); border-color:var(--good); color:#0a1712; font-size:14px; padding:12px;">▶ Resume Active Game</button>
@@ -1290,56 +1291,261 @@ function getFallbackMove(st) {
     }
     return legal[Math.floor(Math.random() * legal.length)];
 }
+/* ===== DEFAULT AI BOT FOR ELO 1-1349 ===== */
+
+const AI_PIECE_VALUES = {
+  p: 100,
+  n: 320,
+  b: 330,
+  r: 500,
+  q: 900,
+  k: 0
+};
+
+function evaluateBoardForAI(board, aiColor){
+  let score = 0;
+
+  for(let r = 0; r < 8; r++){
+    for(let c = 0; c < 8; c++){
+      const p = board[r][c];
+      if(!p) continue;
+
+      let val = AI_PIECE_VALUES[p.t] || 0;
+
+      // Small center bonus
+      if(p.t === 'n' || p.t === 'b' || p.t === 'q' || p.t === 'p'){
+        const centerDist = Math.max(Math.abs(r - 3.5), Math.abs(c - 3.5));
+        if(centerDist <= 1.5) val += 4;
+        if(centerDist <= 0.5) val += 6;
+      }
+
+      // Small pawn advancement bonus
+      if(p.t === 'p'){
+        if(p.c === 'w') val += (6 - r);
+        else val += (r - 1);
+      }
+
+      if(p.c === 'w') score += val;
+      else score -= val;
+    }
+  }
+
+  return aiColor === 'w' ? score : -score;
+}
+
+function moveOrderValue(st, m){
+  const piece = st.board[m.fr][m.fc];
+  const target = st.board[m.tr][m.tc];
+
+  let s = 0;
+
+  if(target && piece){
+    s += 10 * (AI_PIECE_VALUES[target.t] || 0) - (AI_PIECE_VALUES[piece.t] || 0);
+  }
+
+  if(m.ep) s += 100;
+  if(m.promo) s += AI_PIECE_VALUES[m.promo] || 800;
+  if(m.castle) s += 50;
+
+  return s;
+}
+
+function aiSearch(st, depth, alpha, beta, aiColor){
+  const legal = legalMoves(st);
+
+  if(legal.length === 0){
+    const k = findKing(st.board, st.turn);
+
+    if(isAttacked(st.board, k[0], k[1], opp(st.turn))){
+      return st.turn === aiColor ? -100000 - depth : 100000 + depth;
+    }
+
+    return 0;
+  }
+
+  if(depth <= 0){
+    return evaluateBoardForAI(st.board, aiColor);
+  }
+
+  legal.sort((a,b) => moveOrderValue(st, b) - moveOrderValue(st, a));
+
+  if(st.turn === aiColor){
+    let best = -Infinity;
+
+    for(const m of legal){
+      const u = makeM(st, m);
+      const val = aiSearch(st, depth - 1, alpha, beta, aiColor);
+      unmakeM(st, m, u);
+
+      if(val > best) best = val;
+      if(best > alpha) alpha = best;
+
+      if(beta <= alpha) break;
+    }
+
+    return best;
+  } else {
+    let best = Infinity;
+
+    for(const m of legal){
+      const u = makeM(st, m);
+      const val = aiSearch(st, depth - 1, alpha, beta, aiColor);
+      unmakeM(st, m, u);
+
+      if(val < best) best = val;
+      if(best < beta) beta = best;
+
+      if(beta <= alpha) break;
+    }
+
+    return best;
+  }
+}
+
+function getDefaultAIMove(st, aiColor, playerElo){
+  const legal = legalMoves(st);
+  if(!legal.length) return null;
+
+  let depth = 1;
+
+  if(playerElo >= 901 && playerElo <= 1349){
+    depth = 3;
+  } else if(playerElo >= 601 && playerElo <= 900){
+    depth = 2;
+  } else {
+    depth = 1;
+  }
+
+  let bestScore = -Infinity;
+  let bestMoves = [];
+  let alpha = -Infinity;
+
+  const ordered = legal.slice().sort((a,b) => moveOrderValue(st, b) - moveOrderValue(st, a));
+
+  for(const m of ordered){
+    const u = makeM(st, m);
+    const score = aiSearch(st, depth - 1, alpha, Infinity, aiColor);
+    unmakeM(st, m, u);
+
+    if(score > bestScore){
+      bestScore = score;
+      bestMoves = [m];
+    } else if(score >= bestScore - 10){
+      bestMoves.push(m);
+    }
+
+    if(score > alpha) alpha = score;
+  }
+
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)] || legal[0];
+}
 
 function maybeTriggerAI(){
   var practiceId = findPracticeGame();
   if(!practiceId) return;
+
   var g = allGames[practiceId];
   if(!g || !g.vsAI || g.status !== 'playing') return;
+
   var myColor = (g.white && g.white.token === token) ? 'w' : (g.black && g.black.token === token) ? 'b' : null;
   if(!myColor) return;
+
   var aiColor = opp(myColor);
   if(g.turn !== aiColor) return;
   if(sfBusy) return;
+
   sfBusy = true;
-  var shouldBlunder = Math.random() < getBlunderChance();
-  if (sfWorker && sfReady) {
-      sfRequestMove(g.fen, getMyElo(), function(uci){
-          applyAIMove(practiceId, uci, myColor, shouldBlunder);
+
+  var playerElo = getMyElo();
+
+  // Use Stockfish only when player ELO is 1350+
+  if(playerElo >= 1350){
+    sfInit();
+
+    if(sfWorker && sfReady){
+      sfRequestMove(g.fen, playerElo, function(uci){
+        applyAIMove(practiceId, uci, myColor, false);
       });
-  } else {
-      var st = fromFEN(g.fen);
-      var fallbackMove = getFallbackMove(st);
-      applyAIMove(practiceId, fallbackMove, myColor, shouldBlunder);
+      return;
+    }
   }
+
+  // Default AI Bot for ELO 1-1349
+  setTimeout(function(){
+    var st = fromFEN(g.fen);
+    var move = getDefaultAIMove(st, aiColor, playerElo);
+    applyAIMove(practiceId, move, myColor, false);
+  }, 400);
 }
 
+
 function applyAIMove(gameId, moveData, humanColor, shouldBlunder){
-  db.ref('games/'+gameId).transaction(function(g){
+  db.ref('games/' + gameId).transaction(function(g){
     if(!g || g.status !== 'playing') return;
+
     var aiColor = opp(humanColor);
     if(g.turn !== aiColor) return;
+
     var st = fromFEN(g.fen);
     var match = null;
-    if (moveData && typeof moveData === 'string') match = uciToInternal(st, moveData);
-    else if (moveData && typeof moveData === 'object') match = moveData;
-    if (!match || shouldBlunder) match = getFallbackMove(st);
-    if (!match) return;
-    var san = toSAN(st, match); makeM(st, match);
-    g.fen = toFEN(st); g.moves = (g.moves || []).concat([san]);
+
+    if(moveData && typeof moveData === 'string'){
+      match = uciToInternal(st, moveData);
+    } else if(moveData && typeof moveData === 'object'){
+      const legal = legalMoves(st);
+
+      match = legal.find(x =>
+        x.fr === moveData.fr &&
+        x.fc === moveData.fc &&
+        x.tr === moveData.tr &&
+        x.tc === moveData.tc &&
+        (!moveData.promo || x.promo === moveData.promo)
+      ) || null;
+    }
+
+    if(!match || shouldBlunder){
+      match = getFallbackMove(st);
+    }
+
+    if(!match) return;
+
+    var san = toSAN(st, match);
+    makeM(st, match);
+
+    g.fen = toFEN(st);
+    g.moves = (g.moves || []).concat([san]);
     g.fens = (g.fens || [START_FEN]).concat([g.fen]);
-    g.turn = st.turn; g.lastMove = { fr: match.fr, fc: match.fc, tr: match.tr, tc: match.tc };
+    g.turn = st.turn;
+    g.lastMove = {
+      fr: match.fr,
+      fc: match.fc,
+      tr: match.tr,
+      tc: match.tc
+    };
+
     var end = detectEnd(st);
-    if (end) { g.status = 'finished'; g.result = end; } 
+
+    if(end){
+      g.status = 'finished';
+      g.result = end;
+    }
+
     return g;
-  }).then(function(result){ 
-      sfBusy = false; 
-      if(result.committed) {
-          var newG = result.snapshot.val();
-          if(newG && newG.status === 'finished' && !newG.eloProcessed) processGameElo(gameId, newG);
+
+  }).then(function(result){
+    sfBusy = false;
+
+    if(result.committed){
+      var newG = result.snapshot.val();
+
+      if(newG && newG.status === 'finished' && !newG.eloProcessed){
+        processGameElo(gameId, newG);
       }
+    }
   });
 }
+
+
 function cleanupStaleOpenGames(){
   if(!allGames || Object.keys(allUsers).length===0) return;
 
@@ -1637,7 +1843,20 @@ function renderGame(id,g){
   if(g.status==='finished'){sb.classList.add(g.result&&g.result.startsWith('½')?'draw':'win');sb.textContent='Game over — '+g.result}
   else if(!atLatest){sb.textContent='Reviewing move '+curIdx+' of '+(g.moves?g.moves.length:0)}
   else if(canMove){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(myColor==='w'?'White':'Black')+')'}
-     else if(g.status==='playing'){        var turnName = g.turn === 'w' ? (g.white ? escapeHtml(g.white.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—')) : (g.black ? escapeHtml(g.black.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—'));        sb.textContent = g.vsAI ? 'Computer is thinking… (Blunder Mode)' : 'Waiting for ' + turnName + ' to move…';    }
+  else if(g.status==='playing'){
+  var turnName = g.turn === 'w'
+    ? (g.white ? escapeHtml(g.white.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—'))
+    : (g.black ? escapeHtml(g.black.name || 'Player') : (g.vsAI ? '🤖 CPU' : '—'));
+
+  if(g.vsAI){
+    var engineElo = g.playerElo || getMyElo();
+    var engineName = engineElo >= 1350 ? 'Stockfish' : 'Default Bot';
+    sb.textContent = 'Computer is thinking… (' + engineName + ')';
+  } else {
+    sb.textContent = 'Waiting for ' + turnName + ' to move…';
+  }
+}
+
   else{sb.textContent='Waiting for an opponent to join…'}
   $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';
   const specs=g.spectators||{};
@@ -1820,3 +2039,4 @@ function init(){
 }
 init();
 </script></body></html>
+
