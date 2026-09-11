@@ -320,7 +320,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       <div class="card" id="practiceCard">
         <h2>🎯 Practice vs Computer</h2>
         <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Default AI Bot until <b style="color:var(--gold-hi)">1350 ELO</b>. Stockfish unlocks at <b style="color:var(--gold-hi)">1350 ELO</b>.
- Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">500</b>.</p>
+ Your ELO: <b id="practiceElo" style="color:var(--gold-hi)">900</b>.</p>
         
         <div id="resumePracticeArea" style="display:none; margin-bottom:14px;">
             <button class="btn primary" id="resumePracticeBtn" style="width:100%; background:var(--good); border-color:var(--good); color:#0a1712; font-size:14px; padding:12px;">▶ Resume Active Game</button>
@@ -655,7 +655,7 @@ function isOnline(u) {
 
 function $(id){return document.getElementById(id)}
 function show(screen){['lobby','gameScreen'].forEach(s=>$(s).classList.add('hidden'));$(screen).classList.remove('hidden')}
-function getMyElo(){return (allUsers[token]&&allUsers[token].elo)||500}
+function getMyElo(){return (allUsers[token]&&allUsers[token].elo)||900}
 
 function setupPresence() {
   const uref = db.ref('users/' + token);
@@ -1024,7 +1024,7 @@ function sendPM() {
 function openProfile(userToken){
   const u=allUsers[userToken];if(!u)return;
   let html='<h2 style="color:var(--gold);font:400 22px Marcellus,serif;margin-bottom:6px">'+escapeHtml(u.name||'Player')+'</h2>';
-  html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:12px">ELO '+(u.elo||500)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';
+  html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:12px">ELO '+(u.elo||900)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';
   const theirGames=Object.keys(allGames).filter(id=>{const g=allGames[id];return(g.white&&g.white.token===userToken)||(g.black&&g.black.token===userToken)}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0)).slice(0,20);
   html+='<h3 style="font:400 15px Marcellus,serif;color:var(--gold-hi);margin:12px 0 8px">Recent Games</h3>';
   if(!theirGames.length)html+='<div style="color:var(--dim);font-size:12px">No games yet</div>';
@@ -1187,8 +1187,9 @@ function processGameElo(gameId, g) {
         if (!g.white || !g.black) return;
         var whiteToken = g.white.token;
         var blackToken = g.black.token;
-        var whiteElo = (allUsers[whiteToken] && allUsers[whiteToken].elo) || 500;
-        var blackElo = (allUsers[blackToken] && allUsers[blackToken].elo) || 500;
+        var whiteElo = (allUsers[whiteToken] && allUsers[whiteToken].elo) || 900;
+        var blackElo = (allUsers[blackToken] && allUsers[blackToken].elo) || 900;
+
         var whiteScore = 0.5;
         var blackScore = 0.5;
         if (result.indexOf('½') >= 0) { whiteScore = 0.5; blackScore = 0.5; }
@@ -1687,7 +1688,7 @@ function renderPlayersList(){
     }
     div.innerHTML='<div style="font-size:18px;width:30px;text-align:center">'+medal+'</div>'
       +'<div class="grow"><div class="nm" data-act="profile" data-token="'+u.token+'" style="cursor:pointer"><span class="onlinedot '+(online?'on':'off')+'"></span>'+escapeHtml(u.name||'Player')+'</div>'
-      +'<div class="sub">ELO '+(u.elo||500)+'</div></div>'
+      +'<div class="sub">ELO '+(u.elo||900)+'</div></div>'
       +'<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">'+actionHtml+'</div>';
     const profileBtn=div.querySelector('[data-act=profile]');
     if(profileBtn)profileBtn.onclick=function(){openProfile(u.token)};
@@ -2023,7 +2024,7 @@ function init(){
   if(name){
     db.ref('users/'+token).transaction(u=>{
       if(!u)u={};u.name=name;
-      if(u.elo===undefined)u.elo=500;
+      if(u.elo===undefined)u.elo=900;
       return u;
     });
     setupPresence();
@@ -2039,4 +2040,3 @@ function init(){
 }
 init();
 </script></body></html>
-
