@@ -102,8 +102,7 @@ input[type=text]:focus,input[type=password]:focus{outline:none;border-color:var(
 .sq.can{cursor:pointer}.sq.has{cursor:pointer}
 .sq.last::before{content:'';position:absolute;inset:0;background:rgba(242,209,122,.42);z-index:0}
 .sq.sel::before{content:'';position:absolute;inset:0;background:rgba(224,180,88,.32);box-shadow:inset 0 0 0 3px var(--gold);z-index:0}
-.sq.check::before{content:'';position:absolute;inset:0;z-index:0;background:radial-gradient(circle,rgba(228,66,55,.8),rgba(228,66,55,.18) 68%,transparent 78%);animation:chk 1.1s ease-in-out infinite}
-@keyframes chk{50%{opacity:.45}}
+.sq.check{box-shadow:inset 0 0 0 3px var(--red)}
 .piece{position:relative;z-index:1;font-size:calc(var(--bw)/8*.78);line-height:1}
 .wp{color:#f8f3e4;text-shadow:0 0 2px rgba(70,52,22,.9),0 3px 4px rgba(0,0,0,.35)}
 .bp{color:#221d17;text-shadow:0 1px 0 rgba(255,255,255,.22),0 3px 4px rgba(0,0,0,.3)}
@@ -213,6 +212,18 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .reg-mode-option input{accent-color:var(--gold)}
 .reg-mode-option .reg-label{font-weight:700;font-size:13px}
 .reg-mode-option .reg-desc{font-size:11px;color:var(--dim)}
+/* ===== BOARD NOTIFICATIONS ===== */
+.board-notify{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:800 clamp(28px,6vw,52px) Marcellus,serif;letter-spacing:.12em;z-index:100;pointer-events:none;animation:boardNotify var(--notify-duration,1s) ease-in-out forwards;text-shadow:0 0 20px rgba(0,0,0,.8),0 4px 8px rgba(0,0,0,.5);white-space:nowrap}
+@keyframes boardNotify{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
+.board-notify.check{color:#ff4444;text-shadow:0 0 30px #ff0000,0 0 60px #ff000088}
+.board-notify.checkmate{color:#f2d189;text-shadow:0 0 30px #e0b458,0 0 60px #e0b45888}
+.board-notify.stalemate{color:#e6c069;text-shadow:0 0 30px #e6c069,0 0 60px #e6c06988}
+.board-notify.draw{color:#e6c069;text-shadow:0 0 30px #e6c069,0 0 60px #e6c06988}
+.board-notify.drawoffer{color:#8ab4f0;text-shadow:0 0 30px #8ab4f0,0 0 60px #8ab4f088}
+.board-notify.timeout{color:#ff4444;text-shadow:0 0 30px #ff0000,0 0 60px #ff000088}
+.board-notify.yourturn{color:#7fd6a0;text-shadow:0 0 30px #7fd6a0,0 0 60px #7fd6a088}
+.board-notify.resign{color:#f0908c;text-shadow:0 0 30px #e05252,0 0 60px #e0525288}
+.board-notify.start{color:#f2d189;text-shadow:0 0 30px #e0b458,0 0 60px #e0b45888}
 @media(max-width:768px){
   :root{--bw:min(98vw,70dvh,600px)}
   header.top{padding:10px 10px 4px;gap:8px}
@@ -249,9 +260,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   .legend-rank{font-size:22px;flex-basis:28px}
   .legend-players{font-size:12px}
 }
-@media(min-width:769px){
-  .tab-msg-badge{display:none}
-}
+@media(min-width:769px){.tab-msg-badge{display:none}}
 </style></head><body>
 
 <div class="auth-overlay" id="authOverlay">
@@ -429,6 +438,54 @@ firebase.initializeApp(firebaseConfig);const db=firebase.database();const auth=f
 
 function $(id){return document.getElementById(id)}
 
+/* ===== BOARD NOTIFICATION SYSTEM ===== */
+let lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null};
+
+function showBoardNotification(text,colorClass,gameId){
+  const frame=document.querySelector('.frame');
+  if(!frame)return;
+  const existing=frame.querySelector('.board-notify');
+  if(existing)existing.remove();
+  const el=document.createElement('div');
+  el.className='board-notify '+colorClass;
+  el.textContent=text;
+  const g=gameId?allGames[gameId]:(viewGameId?allGames[viewGameId]:null);
+  const isTimed=g&&g.timeControl>0;
+  el.style.setProperty('--notify-duration',isTimed?'0.5s':'1s');
+  frame.appendChild(el);
+  const duration=isTimed?500:1000;
+  setTimeout(()=>{if(el.parentNode)el.remove()},duration+100);
+}
+
+/* ===== SOUND SYSTEM (Web Audio API) ===== */
+class SoundManager{
+  constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}
+  init(){if(this.initialized)return;try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.initialized=true}catch(e){console.warn('Web Audio API not supported')}}
+  unlock(){if(!this.ctx)this.init();if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()}
+  playTone(freq,duration,type='sine',vol=0.3){
+    if(!this.enabled||!this.ctx)return;
+    if(this.ctx.state==='suspended')this.ctx.resume();
+    const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();
+    osc.connect(gain);gain.connect(this.ctx.destination);
+    osc.type=type;osc.frequency.value=freq;
+    gain.gain.setValueAtTime(this.volume*vol,this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+duration);
+    osc.start();osc.stop(this.ctx.currentTime+duration);
+  }
+  playMove(){this.playTone(600,0.08,'sine',0.2);this.playTone(900,0.06,'sine',0.1)}
+  playCapture(){this.playTone(200,0.15,'triangle',0.4);this.playTone(150,0.2,'sawtooth',0.1)}
+  playCheck(){this.playTone(523,0.15,'sine',0.4);setTimeout(()=>this.playTone(784,0.2,'sine',0.4),120)}
+  playCheckmate(){this.playTone(262,0.3,'sine',0.4);setTimeout(()=>this.playTone(330,0.3,'sine',0.4),200);setTimeout(()=>this.playTone(392,0.4,'sine',0.4),400)}
+  playDraw(){this.playTone(440,0.4,'sine',0.3);setTimeout(()=>this.playTone(440,0.6,'sine',0.2),300)}
+  playTimeout(){this.playTone(200,0.3,'square',0.3);setTimeout(()=>this.playTone(150,0.4,'square',0.3),200)}
+  playYourTurn(){this.playTone(880,0.1,'sine',0.2);setTimeout(()=>this.playTone(1100,0.15,'sine',0.25),100)}
+  playStart(){this.playTone(440,0.1,'sine',0.2);setTimeout(()=>this.playTone(550,0.1,'sine',0.2),100);setTimeout(()=>this.playTone(660,0.15,'sine',0.25),200)}
+  playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}
+}
+const soundMgr=new SoundManager();
+document.addEventListener('click',()=>soundMgr.unlock(),{once:true});
+document.addEventListener('touchstart',()=>soundMgr.unlock(),{once:true});
+
 /* ADMIN */
 const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
 $('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}$('adminPasswordInput').value='';$('adminPasswordError').textContent='';$('adminPasswordModal').classList.remove('hidden');setTimeout(()=>$('adminPasswordInput').focus(),100)}});
@@ -532,6 +589,7 @@ auth.onAuthStateChanged(user=>{
     if(snap.exists()){const ud=snap.val();
       if(ud.status==='blocked'){auth.signOut();showAuthError('Your account has been blocked. Contact an administrator.');$('authError').style.color='var(--red)';return}
       if(ud.status==='pending'){auth.signOut();showAuthError('Your account is awaiting admin approval. Please check back later.');$('authError').style.color='var(--amber)';return}
+      if(ud.status==='deleted'){auth.signOut();showAuthError('This account has been deleted.');$('authError').style.color='var(--red)';return}
       name=ud.name||'Player';
     }else{name='Player';db.ref('users/'+token).set({name:name,username:'player',elo:900,online:true,status:'active',lastSeen:firebase.database.ServerValue.TIMESTAMP})}
     $('authOverlay').classList.add('hidden');$('logoutBtn').style.display='';
@@ -577,15 +635,112 @@ function getCurrentTimes(g){if(!g.timeControl)return{w:null,b:null};let w=g.wtim
 function calculateElo(pe,oe,sc){let K=32;if(pe>=1200&&pe<1800)K=24;else if(pe>=1800)K=16;if(pe<800)K=40;const exp=1/(1+Math.pow(10,(oe-pe)/400));return Math.round(Math.max(100,pe+K*(sc-exp)))}
 function estimateAIOpponentElo(pe){if(pe>=1350)return clamp(pe,1350,2850);if(pe>=901)return 1100;if(pe>=601)return 800;return 500}
 function applyMyElo(gid,g){const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;const res=g.result||'';if(res.indexOf('abandoned')>=0||res.indexOf('0-0')>=0)return;db.ref('users/'+token).transaction(u=>{if(!u)return u;u.eloGames=u.eloGames||{};if(u.eloGames[gid])return u;const me=u.elo||900;let oe,ms;if(g.vsAI)oe=estimateAIOpponentElo(g.playerElo||me);else{const ot=mc==='w'?(g.black&&g.black.token):(g.white&&g.white.token);oe=(allUsers[ot]&&allUsers[ot].elo)||900}if(res.indexOf('½')>=0)ms=0.5;else if(res.indexOf('1-0')>=0||res.indexOf('White wins')>=0||res.indexOf('Black resign')>=0||res.indexOf('Black flagged')>=0)ms=mc==='w'?1:0;else if(res.indexOf('0-1')>=0||res.indexOf('Black wins')>=0||res.indexOf('White resign')>=0||res.indexOf('White flagged')>=0)ms=mc==='b'?1:0;else return u;u.elo=calculateElo(me,oe,ms);u.eloGames[gid]=true;return u}).then(r=>{if(r.committed)console.log("✅ ELO updated:",r.snapshot.val().elo)}).catch(e=>console.error('❌ ELO failed:',e))}
-function submitMove(m){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc||g.turn!==mc)return;const st=fromFEN(g.fen);const lg=legalMoves(st);const match=lg.find(x=>x.fr===m.fr&&x.fc===m.fc&&x.tr===m.tr&&x.tc===m.tc&&(!m.promo||x.promo===m.promo));if(!match)return;const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);if(g.timeControl){const el=g.turnStart?(serverNow()-g.turnStart)/1000:0;if(g.turn==='w')g.wtime=Math.max(0,g.wtime-el);else g.btime=Math.max(0,g.btime-el);g.turnStart=firebase.database.ServerValue.TIMESTAMP}g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}return g})}
-function resign(){if(!confirm('Resign this game?'))return;db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;g.status='finished';g.result=mc==='w'?'0-1 · White resigns, Black wins':'1-0 · Black resigns, White wins';return g})}
+
+/* ===== SUBMIT MOVE (with notifications & sounds) ===== */
+function submitMove(m){
+  db.ref('games/'+viewGameId).transaction(g=>{
+    if(!g||g.status!=='playing')return;
+    const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
+    if(!mc||g.turn!==mc)return;
+    const st=fromFEN(g.fen);const lg=legalMoves(st);
+    const match=lg.find(x=>x.fr===m.fr&&x.fc===m.fc&&x.tr===m.tr&&x.tc===m.tc&&(!m.promo||x.promo===m.promo));
+    if(!match)return;
+    const wasCapture=!!(st.board[m.tr][m.tc]||m.ep);
+    const san=toSAN(st,match);makeM(st,match);
+    g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);
+    g.fens=(g.fens||[START_FEN]).concat([g.fen]);
+    if(g.timeControl){const el=g.turnStart?(serverNow()-g.turnStart)/1000:0;if(g.turn==='w')g.wtime=Math.max(0,g.wtime-el);else g.btime=Math.max(0,g.btime-el);g.turnStart=firebase.database.ServerValue.TIMESTAMP}
+    g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};
+    const end=detectEnd(st);
+    if(end){g.status='finished';g.result=end}
+    const k=findKing(st.board,st.turn);
+    g._notify={wasCapture,isCheck:!end&&isAttacked(st.board,k[0],k[1],opp(st.turn)),isMate:end&&end.indexOf('checkmate')!==-1,isStalemate:end&&end.indexOf('Stalemate')!==-1,isDraw:end&&end.indexOf('½')!==-1&&end.indexOf('checkmate')===-1};
+    return g;
+  }).then(result=>{
+    if(result.committed&&result.snapshot.val()){
+      const g=result.snapshot.val();const notify=g._notify;
+      if(!notify)return;
+      if(notify.isMate){showBoardNotification('CHECKMATE','checkmate',viewGameId);soundMgr.playCheckmate()}
+      else if(notify.isStalemate){showBoardNotification('STALEMATE','stalemate',viewGameId);soundMgr.playDraw()}
+      else if(notify.isDraw){showBoardNotification('DRAW','draw',viewGameId);soundMgr.playDraw()}
+      else if(notify.isCheck){showBoardNotification('CHECK!','check',viewGameId);soundMgr.playCheck()}
+      else if(notify.wasCapture){soundMgr.playCapture()}
+      else{soundMgr.playMove()}
+      db.ref('games/'+viewGameId+'/_notify').remove();
+    }
+  });
+}
+
+/* ===== RESIGN (with notification) ===== */
+function resign(){
+  if(!confirm('Resign this game?'))return;
+  db.ref('games/'+viewGameId).transaction(g=>{
+    if(!g||g.status!=='playing')return;
+    const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
+    if(!mc)return;
+    g.status='finished';g.result=mc==='w'?'0-1 · White resigns, Black wins':'1-0 · Black resigns, White wins';
+    return g;
+  }).then(result=>{
+    if(result.committed){showBoardNotification('RESIGNED','resign',viewGameId);soundMgr.playResign()}
+  });
+}
+
+/* ===== DRAW (with notification) ===== */
 function offerDraw(){db.ref('games/'+viewGameId+'/drawOffer').set(token)}
-function respondDraw(acc){db.ref('games/'+viewGameId).transaction(g=>{if(!g)return;if(acc){g.status='finished';g.result='½-½ · Draw agreed'}g.drawOffer=null;return g})}
-function flagTime(loser){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;g.status='finished';g.result=loser==='w'?'0-1 · White flagged, Black wins on time':'1-0 · Black flagged, White wins on time';return g})}
+function respondDraw(acc){
+  db.ref('games/'+viewGameId).transaction(g=>{
+    if(!g)return;
+    if(acc){g.status='finished';g.result='½-½ · Draw agreed'}
+    g.drawOffer=null;
+    return g;
+  }).then(result=>{
+    if(result.committed&&acc){showBoardNotification('DRAW','draw',viewGameId);soundMgr.playDraw()}
+  });
+}
+
+/* ===== FLAG TIME (with notification) ===== */
+function flagTime(loser){
+  db.ref('games/'+viewGameId).transaction(g=>{
+    if(!g||g.status!=='playing')return;
+    g.status='finished';
+    g.result=loser==='w'?'0-1 · White flagged, Black wins on time':'1-0 · Black flagged, White wins on time';
+    return g;
+  }).then(result=>{
+    if(result.committed){showBoardNotification("TIME'S UP!",'timeout',viewGameId);soundMgr.playTimeout()}
+  });
+}
+
 function maybeTriggerAI(){const pid=findPracticeGame();if(!pid)return;const g=allGames[pid];if(!g||!g.vsAI||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;const ac=opp(mc);if(g.turn!==ac)return;if(sfBusy)return;sfBusy=true;const pe=getMyElo()||900;if(pe>=1350){sfInit();if(sfWorker&&sfReady){sfRequestMove(g.fen,pe,uci=>applyAIMove(pid,uci,mc,false));return}}setTimeout(()=>{const st=fromFEN(g.fen);const move=getDefaultAIMove(st,ac,pe);applyAIMove(pid,move,mc,false)},400)}
-function applyAIMove(gid,md,hc,sb){db.ref('games/'+gid).transaction(g=>{if(!g||g.status!=='playing')return;const ac=opp(hc);if(g.turn!==ac)return;const st=fromFEN(g.fen);let match=null;if(md&&typeof md==='string')match=uciToInternal(st,md);else if(md&&typeof md==='object'){const lg=legalMoves(st);match=lg.find(x=>x.fr===md.fr&&x.fc===md.fc&&x.tr===md.tr&&x.tc===md.tc&&(!md.promo||x.promo===md.promo))||null}if(!match||sb)match=getFallbackMove(st);if(!match)return;const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}return g}).then(()=>{sfBusy=false})}
+
+/* ===== AI MOVE (with sound) ===== */
+function applyAIMove(gid,md,hc,sb){
+  db.ref('games/'+gid).transaction(g=>{
+    if(!g||g.status!=='playing')return;
+    const ac=opp(hc);if(g.turn!==ac)return;
+    const st=fromFEN(g.fen);let match=null;
+    if(md&&typeof md==='string')match=uciToInternal(st,md);
+    else if(md&&typeof md==='object'){const lg=legalMoves(st);match=lg.find(x=>x.fr===md.fr&&x.fc===md.fc&&x.tr===md.tr&&x.tc===md.tc&&(!md.promo||x.promo===md.promo))||null}
+    if(!match||sb)match=getFallbackMove(st);
+    if(!match)return;
+    const san=toSAN(st,match);makeM(st,match);
+    g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);
+    g.fens=(g.fens||[START_FEN]).concat([g.fen]);
+    g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};
+    const end=detectEnd(st);
+    if(end){g.status='finished';g.result=end}
+    return g;
+  }).then(()=>{sfBusy=false;soundMgr.playMove()});
+}
+
 function cleanupStaleOpenGames(){if(!allGames||!Object.keys(allUsers).length)return;const now=serverNow();for(const id in allGames){const g=allGames[id];if(!g||g.vsAI||g.status!=='waiting')continue;if(g.createdAt&&now-g.createdAt<20000)continue;const owner=g.white||g.black;if(!owner){db.ref('games/'+id).remove();continue}const ou=allUsers[owner.token];if(!ou||!isOnline(ou)){db.ref('games/'+id).transaction(c=>{if(!c)return;if(c.status!=='waiting')return;return null})}}}
-function goToGame(id){viewGameId=id;viewReviewIndex=null;updateSpectating(id);setChatGame(id);render()}
+
+/* ===== GO TO GAME (reset notification state) ===== */
+function goToGame(id){
+  viewGameId=id;viewReviewIndex=null;
+  updateSpectating(id);setChatGame(id);
+  lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null};
+  render();
+}
 function goToLobby(){updateSpectating(null);setChatGame(null);viewGameId=null;setInGame(null);render()}
 function startClockTick(){if(clockInterval)clearInterval(clockInterval);clockInterval=setInterval(()=>{const g=viewGameId?allGames[viewGameId]:null;if(!g||!g.timeControl||g.status!=='playing')return;const t=getCurrentTimes(g);const we=$('clockW'),be=$('clockB');if(we)we.textContent=fmtClock(t.w);if(be)be.textContent=fmtClock(t.b);if(we){we.classList.toggle('running',g.turn==='w');we.classList.toggle('low',t.w<30)}if(be){be.classList.toggle('running',g.turn==='b');be.classList.toggle('low',t.b<30)}if(t.w<=0)flagTime('w');if(t.b<=0)flagTime('b')},200)}
 function fmtClock(s){if(s==null)return'';s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
@@ -614,44 +769,18 @@ function renderLegendaryGames(category){
   legendaryCategory=category;
   document.querySelectorAll('#legendarySubTab button').forEach(b=>b.classList.toggle('on',b.dataset.st===category));
   const list=$('legendaryList');list.innerHTML='';
-  const games=Object.keys(allGames).filter(id=>{
-    const g=allGames[id];
-    if(!g||g.vsAI||g.status!=='finished')return false;
-    if(!g.white||!g.black)return false;
-    if(!g.moves||!g.moves.length)return false;
-    if(g.result&&(g.result.indexOf('abandoned')>=0||g.result.indexOf('0-0')>=0))return false;
-    if(category==='least'&&g.moves.length<4)return false;
-    return true;
-  }).map(id=>{
-    const g=allGames[id];
-    const we=(allUsers[g.white.token]&&allUsers[g.white.token].elo)||900;
-    const be=(allUsers[g.black.token]&&allUsers[g.black.token].elo)||900;
-    let metric;
-    if(category==='elo')metric=we+be;
-    else metric=g.moves.length;
-    return{id,g,we,be,metric};
-  });
-  if(category==='least')games.sort((a,b)=>a.metric-b.metric);
-  else games.sort((a,b)=>b.metric-a.metric);
+  const games=Object.keys(allGames).filter(id=>{const g=allGames[id];if(!g||g.vsAI||g.status!=='finished')return false;if(!g.white||!g.black)return false;if(!g.moves||!g.moves.length)return false;if(g.result&&(g.result.indexOf('abandoned')>=0||g.result.indexOf('0-0')>=0))return false;if(category==='least'&&g.moves.length<4)return false;return true}).map(id=>{const g=allGames[id];const we=(allUsers[g.white.token]&&allUsers[g.white.token].elo)||900;const be=(allUsers[g.black.token]&&allUsers[g.black.token].elo)||900;let metric;if(category==='elo')metric=we+be;else metric=g.moves.length;return{id,g,we,be,metric}});
+  if(category==='least')games.sort((a,b)=>a.metric-b.metric);else games.sort((a,b)=>b.metric-a.metric);
   const top=games.slice(0,3);
   if(!top.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No legendary games yet. Finish a PvP game to make history!</p>';return}
   const medals=['🥇','🥈','🥉'];
-  top.forEach((entry,i)=>{
-    const div=document.createElement('div');div.className='legend-item';
-    const wn=escapeHtml(entry.g.white.name||'Player');
-    const bn=escapeHtml(entry.g.black.name||'Player');
-    let metricHtml;
-    if(category==='elo')metricHtml='👑 Combined ELO: <b>'+entry.metric+'</b> ('+entry.we+' + '+entry.be+')';
-    else if(category==='most')metricHtml='⚔️ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';
-    else metricHtml='⚡ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';
-    div.innerHTML='<div class="legend-rank">'+medals[i]+'</div><div class="legend-main"><div class="legend-players">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="legend-metric">'+metricHtml+'</div><div class="legend-result">'+escapeHtml(entry.g.result||'finished')+'</div></div>';
-    const wb=document.createElement('button');wb.className='btn sm';wb.textContent='👁 Watch';wb.onclick=()=>goToGame(entry.id);div.appendChild(wb);
-    list.appendChild(div);
-  });
+  top.forEach((entry,i)=>{const div=document.createElement('div');div.className='legend-item';const wn=escapeHtml(entry.g.white.name||'Player');const bn=escapeHtml(entry.g.black.name||'Player');let metricHtml;if(category==='elo')metricHtml='👑 Combined ELO: <b>'+entry.metric+'</b> ('+entry.we+' + '+entry.be+')';else if(category==='most')metricHtml='⚔️ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';else metricHtml='⚡ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';div.innerHTML='<div class="legend-rank">'+medals[i]+'</div><div class="legend-main"><div class="legend-players">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="legend-metric">'+metricHtml+'</div><div class="legend-result">'+escapeHtml(entry.g.result||'finished')+'</div></div>';const wb=document.createElement('button');wb.className='btn sm';wb.textContent='👁 Watch';wb.onclick=()=>goToGame(entry.id);div.appendChild(wb);list.appendChild(div)});
 }
 function renderGameList(){const gl=$('gameList');gl.innerHTML='';const gids=Object.keys(allGames).filter(id=>{const g=allGames[id];if(!g||g.vsAI)return false;if(g.status==='finished'||g.status==='closed')return false;if(g.challengedToken&&g.challengedToken!==token)return false;if(g.status==='waiting'){const o=g.white||g.black;if(o&&allUsers[o.token]&&!isOnline(allUsers[o.token]))return false}return true}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet.</p>';return}gids.forEach(id=>{const g=allGames[id];const div=document.createElement('div');div.className='item';const iam=(g.white&&g.white.token===token)||(g.black&&g.black.token===token);const wn=g.white?escapeHtml(g.white.name||'Player'):'—';const bn=g.black?escapeHtml(g.black.name||'Player'):'Waiting…';let badge='';if(g.status==='waiting')badge='<span class="badge wait">waiting</span>';if(g.status==='playing')badge='<span class="badge play">playing</span>';if(g.timeControl)badge+=' <span class="badge">'+Math.round(g.timeControl/60)+'min</span>';div.innerHTML='<div class="grow"><div class="nm" style="cursor:default">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="sub">'+(g.moves?g.moves.length:0)+' moves</div></div>'+badge;if(iam){if(g.status==='waiting'){const cb=document.createElement('button');cb.className='btn sm danger';cb.textContent='Cancel';cb.onclick=()=>cancelGame(id);div.appendChild(cb)}else{const cb=document.createElement('button');cb.className='btn sm primary';cb.textContent='Continue';cb.onclick=()=>goToGame(id);div.appendChild(cb)}}else{if(g.status==='waiting'){const jb=document.createElement('button');jb.className='btn sm primary';jb.textContent='Join';jb.onclick=()=>joinGame(id);div.appendChild(jb)}else if(g.status==='playing'){const wb=document.createElement('button');wb.className='btn sm';wb.textContent='Watch';wb.onclick=()=>goToGame(id);div.appendChild(wb)}}gl.appendChild(div)})}
 function setPlaque(el,color,pn,isTurn,caps,matAdv,clockId,tv,tr,tl){let ch='';caps.forEach(p=>{ch+='<span class="cap-piece sym '+(p.c==='w'?'wp':'bp')+'">'+GLYPH[p.t]+'</span>'});let ah='';if(matAdv>0)ah='<span class="mat-adv">+'+matAdv+'</span>';let cl='';if(clockId)cl='<div class="clock'+(tr?' running':'')+(tl?' low':'')+'" id="'+clockId+'">'+fmtClock(tv)+'</div>';el.innerHTML='<div class="plaque-left"><div class="pname">'+pn+'</div><div class="psub">'+(color==='w'?'White':'Black')+'</div></div><div class="plaque-right"><div class="caps-row">'+ch+ah+'</div>'+cl+(isTurn?'<div class="turn-dot"></div>':'')+'</div>';el.classList.toggle('active',isTurn)}
 function renderReviewControls(g){const rc=$('reviewControls');if(!rc)return;const fens=g.fens||[g.fen];const tm=(g.moves||[]).length;let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));rc.innerHTML='<button class="btn sm" id="rvFirst">⏮</button><button class="btn sm" id="rvPrev">◀</button><span style="color:var(--dim);font:600 12px \'IBM Plex Mono\',monospace;min-width:90px;text-align:center">Move '+ci+' / '+tm+'</span><button class="btn sm" id="rvNext">▶</button><button class="btn sm" id="rvLast">⏭</button>';$('rvFirst').onclick=()=>{viewReviewIndex=0;render()};$('rvPrev').onclick=()=>{viewReviewIndex=Math.max(0,ci-1);render()};$('rvNext').onclick=()=>{viewReviewIndex=Math.min(tm,ci+1);render()};$('rvLast').onclick=()=>{viewReviewIndex=null;render()};$('rvPrev').disabled=(ci<=0);$('rvFirst').disabled=(ci<=0);$('rvNext').disabled=(ci>=tm);$('rvLast').disabled=(ci>=tm)}
+
+/* ===== RENDER GAME (with turn/draw/start notifications) ===== */
 function renderGame(id,g){
   updateSpectating(id);
   const myColor=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
@@ -684,6 +813,24 @@ function renderGame(id,g){
   else if(canM){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(myColor==='w'?'White':'Black')+')'}
   else if(g.status==='playing'){const tn2=g.turn==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));if(g.vsAI){const ee=g.playerElo||getMyElo()||900;sb.textContent='Computer is thinking… ('+(ee>=1350?'Stockfish':'Default Bot')+')'}else sb.textContent='Waiting for '+tn2+' to move…'}
   else sb.textContent='Waiting for an opponent to join…';
+
+  /* ===== NOTIFICATIONS: Turn / Draw Offer / Game Start ===== */
+  const currentGameId=id;
+  if(canM&&lastNotifyState.lastGameId===currentGameId&&!lastNotifyState.wasMyTurn){
+    showBoardNotification('YOUR TURN','yourturn',currentGameId);
+    soundMgr.playYourTurn();
+  }
+  if(g.drawOffer&&g.drawOffer!==token&&myColor&&lastNotifyState.lastGameId===currentGameId){
+    if(!lastNotifyState.lastDrawOffer||lastNotifyState.lastDrawOffer!==g.drawOffer){
+      showBoardNotification('DRAW OFFER','drawoffer',currentGameId);
+    }
+  }
+  if(lastNotifyState.lastGameId!==currentGameId&&g.status==='playing'&&g.moves&&g.moves.length===0){
+    showBoardNotification('GAME START','start',currentGameId);
+    soundMgr.playStart();
+  }
+  lastNotifyState={wasMyTurn:canM,lastGameId:currentGameId,lastFen:g.fen,lastDrawOffer:g.drawOffer||null};
+
   $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';
   const specs=g.spectators||{};let sh='';let sc=0;
   for(const tk in specs){if(specs[tk]){sh+='<div class="spec-item">'+((tk===token)?escapeHtml(specs[tk])+' (You)':escapeHtml(specs[tk]))+'</div>';sc++}}
@@ -697,6 +844,7 @@ function renderGame(id,g){
   setBadge($('specBadge'),sc);setBadge($('movesBadge'),moves.length);
   if(!mobilePanelsInit&&window.innerWidth<=768){['specPanel','chatPanel','movesPanel'].forEach(pid=>{const p=$(pid);if(p)p.classList.add('closed')});mobilePanelsInit=true}
 }
+
 function renderBoard(st,orient,canM,lastM){
   const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));
   for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){
