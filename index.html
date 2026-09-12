@@ -21,9 +21,11 @@ h1{font:400 clamp(20px,4vw,30px) Marcellus,serif;letter-spacing:.06em;line-heigh
 .myslot{margin-left:auto;text-align:right;font:500 11px 'IBM Plex Mono',monospace;color:var(--dim);line-height:1.5;display:flex;align-items:center;gap:10px}
 .myslot b{color:var(--gold-hi)}
 .tabnav{position:relative;z-index:1;display:flex;gap:4px;max-width:1240px;margin:0 auto;padding:6px 20px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:8px 16px;cursor:pointer;font:800 12px Manrope,sans-serif;letter-spacing:.06em;transition:.15s}
+.tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);padding:8px 16px;cursor:pointer;font:800 12px Manrope,sans-serif;letter-spacing:.06em;transition:.15s;display:flex;align-items:center;gap:4px}
 .tabbtn:hover{color:var(--gold-hi)}
 .tabbtn.on{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-icon{display:none;font-size:15px}
+.tab-msg-badge{display:none;min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font:800 9px Manrope,sans-serif;place-items:center;padding:0 4px}
 main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
 @media(max-width:940px){main{grid-template-columns:1fr}}
 .hidden{display:none!important}
@@ -36,6 +38,8 @@ main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 20p
 .panel.closed>header::after{transform:rotate(-90deg)}
 .panel.closed .pbody{display:none}
 .panel .pbody{padding:12px}
+.panel-badge{display:none;min-width:18px;height:18px;border-radius:99px;background:var(--gold);color:#221a0b;font:800 10px Manrope,sans-serif;place-items:center;padding:0 5px;margin-left:6px}
+.panel.closed .panel-badge{display:grid}
 .btn{font:800 12px Manrope,sans-serif;letter-spacing:.05em;color:var(--ink);background:#0d1d13;border:1px solid var(--line);border-radius:7px;padding:9px 12px;cursor:pointer;transition:.15s}
 .btn:hover{border-color:var(--gold);color:var(--gold-hi)}
 .btn.primary{background:var(--gold);border-color:var(--gold);color:#221a0b}
@@ -72,6 +76,7 @@ input[type=text]:focus,input[type=password]:focus{outline:none;border-color:var(
 .gamewrap{display:grid;grid-template-columns:auto 380px;gap:20px;align-items:start}
 @media(max-width:940px){.gamewrap{grid-template-columns:1fr}}
 .boardcol{display:flex;flex-direction:column;gap:8px}
+.game-action-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,rgba(20,42,29,.92),rgba(13,28,19,.92))}
 .plaque{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,rgba(20,42,29,.92),rgba(13,28,19,.92))}
 .plaque.active{border-color:var(--gold);box-shadow:0 0 12px rgba(224,180,88,.15)}
 .plaque-left{display:flex;flex-direction:column}
@@ -127,6 +132,12 @@ input[type=text]:focus,input[type=password]:focus{outline:none;border-color:var(
 .chat-input-row input:focus{outline:none;border-color:var(--gold)}
 .spec-item{padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:#0d1d13;margin-bottom:6px;font-size:13px;display:flex;align-items:center;gap:8px}
 .spec-item::before{content:'👁';font-size:14px}
+.legend-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0d1d13}
+.legend-rank{font-size:26px;flex:0 0 34px;text-align:center}
+.legend-main{flex:1;min-width:0}
+.legend-players{font-weight:800;font-size:14px;margin-bottom:2px}
+.legend-metric{font:600 11px 'IBM Plex Mono',monospace;color:var(--gold-hi)}
+.legend-result{font:500 10.5px 'IBM Plex Mono',monospace;color:var(--dim);margin-top:2px}
 .modal{position:fixed;inset:0;z-index:60;background:rgba(5,10,7,.8);display:grid;place-items:center;padding:16px}
 .promo-box,.challenge-box{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--gold);border-radius:12px;padding:20px 24px;text-align:center;max-width:400px;width:100%}
 .promo-box h3,.challenge-box h3{font:400 18px Marcellus,serif;color:var(--gold);margin-bottom:14px}
@@ -136,7 +147,6 @@ input[type=text]:focus,input[type=password]:focus{outline:none;border-color:var(
 .promo-picks button:hover{border-color:var(--gold)}
 .promo-picks .pg{font-size:36px}
 footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 10px 'IBM Plex Mono',monospace;padding:12px 20px 30px}
-@media(max-width:560px){header.top{padding:12px 12px 8px;gap:10px}.tag{display:none}.crest{width:36px;height:36px;flex-basis:36px;font-size:19px}.myslot{font-size:9px}main{padding:0 10px 8px}.plaque{padding:5px 9px;gap:8px}.plaque .pname{font-size:13px}.plaque .psub{font-size:9px}.caps-row{max-width:110px}.cap-piece{font-size:13px}}
 #inboxList{gap:8px}
 .msg-inbox-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:#0d1d13;cursor:pointer;transition:.15s}
 .msg-inbox-item:hover{border-color:rgba(224,180,88,.45);background:rgba(224,180,88,.06)}
@@ -157,7 +167,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .msg-meta{display:block;font:600 9px 'IBM Plex Mono',monospace;margin-top:4px;opacity:.72}
 .chat-input-row input{border-radius:999px;padding:9px 14px}
 .chat-input-row .btn{border-radius:999px;padding:9px 14px}
-@media(max-width:560px){.msg-bubble{max-width:88%}}
 .profile-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .profile-stat-box{background:#0d1d13;border:1px solid var(--line);border-radius:8px;padding:10px}
 .profile-stat-title{font:800 10px Manrope,sans-serif;color:var(--dim);letter-spacing:.1em;margin-bottom:6px;text-transform:uppercase}
@@ -204,6 +213,46 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .reg-mode-option input{accent-color:var(--gold)}
 .reg-mode-option .reg-label{font-weight:700;font-size:13px}
 .reg-mode-option .reg-desc{font-size:11px;color:var(--dim)}
+/* ===== MOBILE OPTIMIZATIONS ===== */
+@media(max-width:768px){
+  :root{--bw:min(98vw,70dvh,600px)}
+  header.top{padding:10px 10px 4px;gap:8px}
+  h1{font-size:18px}
+  .tag{display:none}
+  .crest{width:34px;height:34px;flex-basis:34px;font-size:18px}
+  .myslot{font-size:9px}
+  .tabnav{padding:4px 6px 6px;gap:2px;justify-content:space-around}
+  .tabbtn{padding:8px 10px;flex:1;justify-content:center}
+  .tab-text{display:none}
+  .tab-icon{display:inline}
+  .tab-msg-badge{display:grid}
+  main{padding:8px;gap:10px}
+  .card{padding:10px;margin-bottom:10px}
+  .card h2{font-size:16px;margin-bottom:8px}
+  .gamewrap{gap:10px}
+  .boardcol{gap:6px}
+  .game-action-bar{padding:6px 8px;gap:6px}
+  .game-action-bar .btn{flex:1;text-align:center;padding:8px 6px}
+  .plaque{padding:6px 10px}
+  .plaque .pname{font-size:13px}
+  .plaque .psub{font-size:9px}
+  .caps-row{max-width:110px}
+  .cap-piece{font-size:13px}
+  .clock{font-size:15px;min-width:66px}
+  .status-banner{font-size:12px;padding:8px 10px}
+  .panel>header{padding:9px 10px;font-size:10px}
+  .panel .pbody{padding:8px}
+  .item{padding:8px 10px;gap:8px}
+  .seg button{font-size:10px}
+  footer{padding:10px 10px 20px}
+  .msg-bubble{max-width:88%}
+  .legend-item{padding:10px;gap:8px}
+  .legend-rank{font-size:22px;flex-basis:28px}
+  .legend-players{font-size:12px}
+}
+@media(min-width:769px){
+  .tab-msg-badge{display:none}
+}
 </style></head><body>
 
 <div class="auth-overlay" id="authOverlay">
@@ -285,12 +334,15 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   <div class="myslot" id="myslot"><span class="elo-spinner"></span></div>
   <button class="btn sm danger" id="logoutBtn" onclick="logout()" style="display:none">Logout</button>
 </header>
+
 <div class="tabnav" id="tabNav">
-  <button class="tabbtn on" data-tab="play">Play</button>
-  <button class="tabbtn" data-tab="players">Players</button>
-  <button class="tabbtn" data-tab="practice">Practice</button>
-  <button class="tabbtn" data-tab="messages">Messages <span id="unreadBadge" class="badge" style="display:none;background:var(--red);color:#fff;border-color:var(--red);padding:1px 6px;margin-left:4px;"></span></button>
+  <button class="tabbtn on" data-tab="play"><span class="tab-icon">⚔️</span><span class="tab-text">Play</span></button>
+  <button class="tabbtn" data-tab="players"><span class="tab-icon">👥</span><span class="tab-text">Players</span></button>
+  <button class="tabbtn" data-tab="practice"><span class="tab-icon">🤖</span><span class="tab-text">Practice</span></button>
+  <button class="tabbtn" data-tab="legendary"><span class="tab-icon">🏛️</span><span class="tab-text">Legendary</span></button>
+  <button class="tabbtn" data-tab="messages"><span class="tab-icon">💬</span><span class="tab-text">Messages</span> <span id="unreadBadge" class="tab-msg-badge"></span></button>
 </div>
+
 <main>
   <section id="lobby" class="hidden" style="display:flex;flex-direction:column;gap:16px">
     <div class="tabpane" id="tab-play">
@@ -301,7 +353,18 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       </div>
       <div class="card"><h2>Open Games</h2><div class="list" id="gameList"></div></div>
     </div>
-    <div class="tabpane hidden" id="tab-players"><div class="card"><h2>🏆 Players & Leaderboard</h2><div class="list" id="playersList"></div></div></div>
+
+    <div class="tabpane hidden" id="tab-players">
+      <div class="card"><h2>🏆 Players</h2>
+        <div class="seg" id="playersSubTab" style="margin-bottom:12px">
+          <button data-st="leaderboard" class="on">🏆 Leaderboard</button>
+          <button data-st="online">🟢 Online</button>
+        </div>
+        <div id="leaderboardView"><div class="list" id="playersList"></div></div>
+        <div id="onlineView" class="hidden"><div class="list" id="onlinePlayersList"></div></div>
+      </div>
+    </div>
+
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard"><h2>🎯 Practice vs Computer</h2>
         <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Default AI Bot until <b style="color:var(--gold-hi)">1350 ELO</b>. Stockfish unlocks at <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.</p>
@@ -310,6 +373,18 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
         <button class="btn primary" id="practiceBtn" style="width:100%">Start New Practice</button>
       </div>
     </div>
+
+    <div class="tabpane hidden" id="tab-legendary">
+      <div class="card"><h2>🏛️ Legendary Games</h2>
+        <div class="seg" id="legendarySubTab" style="margin-bottom:12px">
+          <button data-st="elo" class="on">👑 Top ELO</button>
+          <button data-st="most">⚔️ Most Moves</button>
+          <button data-st="least">⚡ Least Moves</button>
+        </div>
+        <div class="list" id="legendaryList"></div>
+      </div>
+    </div>
+
     <div class="tabpane hidden" id="tab-messages">
       <div class="card"><h2>💬 Private Messages</h2><div id="inboxList" class="list"></div>
         <div id="chatView" class="hidden" style="margin-top:16px;border-top:1px solid var(--line);padding-top:16px;">
@@ -320,22 +395,29 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       </div>
     </div>
   </section>
+
   <section id="gameScreen" class="hidden">
     <div class="gamewrap">
-      <div class="boardcol"><div class="plaque" id="topPlaque"></div><div class="frame"><div id="board"></div></div><div class="plaque" id="botPlaque"></div></div>
+      <div class="boardcol">
+        <div class="game-action-bar" id="gameActionBar"></div>
+        <div class="plaque" id="topPlaque"></div>
+        <div class="frame"><div id="board"></div></div>
+        <div class="plaque" id="botPlaque"></div>
+      </div>
       <div>
+        <div class="status-banner" id="statusBanner"></div>
         <div id="reviewControls" class="row" style="justify-content:center;gap:6px;margin-bottom:10px"></div>
-        <div id="drawOfferBar"></div><div class="status-banner" id="statusBanner"></div><div id="specNote"></div>
-        <section class="panel" id="specPanel"><header>👥 Spectators</header><div class="pbody" id="spectatorList"></div></section>
-        <section class="panel" id="chatPanel"><header>💬 Chat</header><div class="pbody"><div id="chatList" class="chat-list"></div><div class="chat-input-row"><input type="text" id="chatInput" placeholder="Say something…" maxlength="200"><button class="btn sm" onclick="sendChat()">Send</button></div></div></section>
-        <section class="panel" id="movesPanel"><header>Moves</header><div class="pbody" id="moveLog"></div></section>
-        <div class="row" id="gameControls"></div>
-        <div class="row" style="margin-top:10px"><button class="btn" id="backBtn">← Lobby</button></div>
+        <div id="drawOfferBar"></div>
+        <div id="specNote"></div>
+        <section class="panel" id="specPanel"><header>👥 Spectators <span class="panel-badge" id="specBadge"></span></header><div class="pbody" id="spectatorList"></div></section>
+        <section class="panel" id="chatPanel"><header>💬 Chat <span class="panel-badge" id="chatBadge"></span></header><div class="pbody"><div id="chatList" class="chat-list"></div><div class="chat-input-row"><input type="text" id="chatInput" placeholder="Say something…" maxlength="200"><button class="btn sm" onclick="sendChat()">Send</button></div></div></section>
+        <section class="panel" id="movesPanel"><header>📋 Moves <span class="panel-badge" id="movesBadge"></span></header><div class="pbody" id="moveLog"></div></section>
       </div>
     </div>
   </section>
 </main>
 <footer>Multiplayer Chess · real-time via Firebase</footer>
+
 <div id="promoModal" class="modal hidden"><div class="promo-box"><h3>Promote to</h3><div class="promo-picks" id="promoPicks"></div></div></div>
 <div id="challengeModal" class="modal hidden"><div class="challenge-box"><h3>⚔️ Challenge <span id="chalTargetName">Player</span></h3>
   <div class="opt-group"><div class="opt-label">PLAY AS</div><div class="seg" id="chalColorSeg"><button data-c="w" class="on">White</button><button data-c="b">Black</button><button data-c="r">Random</button></div></div>
@@ -353,53 +435,25 @@ firebase.initializeApp(firebaseConfig);const db=firebase.database();const auth=f
 
 /* ADMIN */
 const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
-$('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}$('adminPasswordInput').value='';$('adminPasswordError').textContent='';$('adminPasswordModal').classList.remove('hidden');setTimeout(()=>$('adminPasswordInput').focus(),100)}});
-$('adminPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPassword()});
-function verifyAdminPassword(){if($('adminPasswordInput').value===ADMIN_PASSWORD){isAdminSession=true;$('adminPasswordModal').classList.add('hidden');openAdminPanel()}else{$('adminPasswordError').textContent='Incorrect password.'}}
-function openAdminPanel(){$('adminOverlay').classList.remove('hidden');renderAdminPanel()}
-function closeAdminPanel(){$('adminOverlay').classList.add('hidden');isAdminSession=false}
+$('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}<LaTex>id_1</LaTex>('adminPasswordError').textContent='';<LaTex>id_2</LaTex>('adminPasswordInput').focus(),100)}});
+<LaTex>id_3</LaTex>('adminPasswordInput').value===ADMIN_PASSWORD){isAdminSession=true;<LaTex>id_4</LaTex>('adminPasswordError').textContent='Incorrect password.'}}
+function openAdminPanel(){<LaTex>id_5</LaTex>('adminOverlay').classList.add('hidden');isAdminSession=false}
 function renderAdminPanel(){loadRegistrationSettings();renderPendingUsers();renderAdminUsers()}
 function loadRegistrationSettings(){db.ref('settings/registrationMode').once('value').then(snap=>{const mode=snap.val()||'open';document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})})}
 function setRegistrationMode(mode){db.ref('settings/registrationMode').set(mode);document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})}
-function renderPendingUsers(){const list=$('pendingList');const pending=Object.keys(allUsers).filter(uid=>allUsers[uid].status==='pending');$('pendingCount').textContent=pending.length;if(!pending.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No pending registrations.</p>';return}list.innerHTML='';pending.forEach(uid=>{const u=allUsers[uid];const div=document.createElement('div');div.className='admin-user-item';div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong><span class="admin-user-elo">@'+escapeHtml(u.username||'?')+'</span><span class="badge pending">PENDING</span></div><div class="admin-user-actions"><button class="btn sm primary" onclick="adminApprove(\''+uid+'\')">✓ Approve</button><button class="btn sm danger" onclick="adminDeny(\''+uid+'\')">✕ Deny</button></div>';list.appendChild(div)})}
-function renderAdminUsers(){const list=$('adminUserList');list.innerHTML='';const users=Object.keys(allUsers).sort((a,b)=>(allUsers[b].elo||900)-(allUsers[a].elo||900));if(!users.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No users found.</p>';return}users.forEach(uid=>{const u=allUsers[uid];const status=u.status||'active';const sc=status==='blocked'?'blocked':status==='pending'?'pending':'active';const div=document.createElement('div');div.className='admin-user-item';let acts='<button class="btn sm" onclick="adminEditName(\''+uid+'\')">✏️ Name</button><button class="btn sm" onclick="adminEditElo(\''+uid+'\')">📊 ELO</button>';if(uid!==token){if(status==='blocked')acts+='<button class="btn sm primary" onclick="adminUnblock(\''+uid+'\')">Unblock</button>';else acts+='<button class="btn sm danger" onclick="adminBlock(\''+uid+'\')">Block</button>'}div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong>'+(uid===token?'<span class="badge me">YOU</span>':'')+'<span class="admin-user-elo">@'+escapeHtml(u.username||'?')+' · ELO: '+(u.elo||900)+'</span><span class="badge '+sc+'">'+status.toUpperCase()+'</span></div><div class="admin-user-actions">'+acts+'</div>';list.appendChild(div)})}
-function adminEditName(uid){const cur=allUsers[uid]?allUsers[uid].name:'';const nn=prompt('Enter new DISPLAY NAME for "'+cur+'":',cur);if(nn&&nn.trim()){db.ref('users/'+uid+'/name').set(nn.trim().slice(0,25));setTimeout(renderAdminPanel,500)}}
-function adminEditElo(uid){const cur=allUsers[uid]?allUsers[uid].elo:900;const ne=prompt('Enter new ELO for "'+(allUsers[uid]?allUsers[uid].name:'user')+'":',cur);if(ne!==null&&!isNaN(parseInt(ne))){db.ref('users/'+uid+'/elo').set(clamp(parseInt(ne),100,3200));setTimeout(renderAdminPanel,500)}}
-function adminBlock(uid){if(uid===token){alert('You cannot block yourself.');return}if(confirm('Block "'+(allUsers[uid]?allUsers[uid].name:'this user')+'"?')){db.ref('users/'+uid+'/status').set('blocked');setTimeout(renderAdminPanel,500)}}
-function adminUnblock(uid){db.ref('users/'+uid+'/status').set('active');setTimeout(renderAdminPanel,500)}
-function adminApprove(uid){db.ref('users/'+uid+'/status').set('active');setTimeout(renderAdminPanel,500)}
-function adminDeny(uid){if(confirm('Deny and remove this registration?')){db.ref('users/'+uid).remove();setTimeout(renderAdminPanel,500)}}
-
-/* AUTH UI */
-function usernameToEmail(u){return u.toLowerCase().trim()+'@chess.game'}
-function validateUsername(u){if(!u||u.trim().length<3)return 'Username must be at least 3 characters.';if(u.trim().length>20)return 'Username must be 20 characters or less.';if(!/^[a-zA-Z0-9_]+$/.test(u.trim()))return 'Only letters, numbers, and underscores allowed.';return null}
-function switchAuthTab(t){$('authError').textContent='';$('authError').style.color='';if(t==='login'){$('tabLogin').classList.add('on');$('tabRegister').classList.remove('on');$('loginForm').classList.add('on');$('registerForm').classList.remove('on')}else{$('tabRegister').classList.add('on');$('tabLogin').classList.remove('on');$('registerForm').classList.add('on');$('loginForm').classList.remove('on')}}
-function showAuthError(m){$('authError').textContent=m}
-function getAuthErrorMessage(c){const m={'auth/email-already-in-use':'This username is already taken.','auth/invalid-email':'Invalid username.','auth/weak-password':'Password must be at least 6 characters.','auth/user-not-found':'No account found with this username.','auth/wrong-password':'Incorrect password.','auth/invalid-credential':'Invalid username or password.','auth/too-many-requests':'Too many attempts. Please wait.','auth/network-request-failed':'Network error.','auth/missing-password':'Please enter a password.'};return m[c]||'An error occurred. Please try again.'}
-function registerUser(){
-  const username=$('regUsername').value.trim();
-  const displayName=$('regDisplayName').value.trim();
-  const pw=$('regPassword').value;const pw2=$('regPasswordConfirm').value;
-  const ue=validateUsername(username);if(ue){showAuthError(ue);return}
-  if(!displayName){showAuthError('Please enter a display name.');return}
-  if(displayName.length>25){showAuthError('Display name must be 25 characters or less.');return}
-  if(!pw||pw.length<6){showAuthError('Password must be at least 6 characters.');return}
-  if(pw!==pw2){showAuthError('Passwords do not match.');return}
-  $('regBtn').disabled=true;$('regBtn').textContent='Checking...';
-  db.ref('settings/registrationMode').once('value').then(snap=>{
-    const mode=snap.val()||'open';
-    if(mode==='closed'){showAuthError('Registration is currently closed.');$('regBtn').disabled=false;$('regBtn').textContent='Create Account';return}
-    const userStatus=(mode==='approval')?'pending':'active';
-    $('regBtn').textContent='Creating...';
+function renderPendingUsers(){const list=<LaTex>id_6</LaTex>('pendingCount').textContent=pending.length;if(!pending.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No pending registrations.</p>';return}list.innerHTML='';pending.forEach(uid=>{const u=allUsers[uid];const div=document.createElement('div');div.className='admin-user-item';div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong><span class="admin-user-elo">@'+escapeHtml(u.username||'?')+'</span><span class="badge pending">PENDING</span></div><div class="admin-user-actions"><button class="btn sm primary" onclick="adminApprove(\''+uid+'\')">✓ Approve</button><button class="btn sm danger" onclick="adminDeny(\''+uid+'\')">✕ Deny</button></div>';list.appendChild(div)})}
+function renderAdminUsers(){const list=<LaTex>id_7</LaTex>/.test(u.trim()))return 'Only letters, numbers, and underscores allowed.';return null}
+function switchAuthTab(t){<LaTex>id_8</LaTex>('authError').style.color='';if(t==='login'){<LaTex>id_9</LaTex>('tabRegister').classList.remove('on');<LaTex>id_10</LaTex>('registerForm').classList.remove('on')}else{<LaTex>id_11</LaTex>('tabLogin').classList.remove('on');<LaTex>id_12</LaTex>('loginForm').classList.remove('on')}}
+function showAuthError(m){<LaTex>id_13</LaTex>('regUsername').value.trim();const displayName=<LaTex>id_14</LaTex>('regPassword').value;const pw2=<LaTex>id_15</LaTex>('regBtn').disabled=true;<LaTex>id_16</LaTex>('regBtn').disabled=false;<LaTex>id_17</LaTex>('regBtn').textContent='Creating...';
     auth.createUserWithEmailAndPassword(usernameToEmail(username),pw)
       .then(cred=>{return db.ref('users/'+cred.user.uid).set({name:displayName,username:username,elo:900,online:true,status:userStatus,lastSeen:firebase.database.ServerValue.TIMESTAMP})})
-      .then(()=>{if(userStatus==='pending'){auth.signOut();showAuthError('');switchAuthTab('login');$('authError').textContent='Account created! Please wait for admin approval.';$('authError').style.color='var(--amber)'}})
-      .catch(err=>{showAuthError(getAuthErrorMessage(err.code));$('regBtn').disabled=false;$('regBtn').textContent='Create Account'});
+      .then(()=>{if(userStatus==='pending'){auth.signOut();showAuthError('');switchAuthTab('login');<LaTex>id_18</LaTex>('authError').style.color='var(--amber)'}})
+      .catch(err=>{showAuthError(getAuthErrorMessage(err.code));<LaTex>id_19</LaTex>('regBtn').textContent='Create Account'});
   });
 }
-function loginUser(){const username=$('loginUsername').value.trim();const pw=$('loginPassword').value;if(!username){showAuthError('Please enter your username.');return}if(!pw){showAuthError('Please enter your password.');return}$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in...';auth.signInWithEmailAndPassword(usernameToEmail(username),pw).then(()=>{showAuthError('')}).catch(err=>{showAuthError(getAuthErrorMessage(err.code));$('loginBtn').disabled=false;$('loginBtn').textContent='Sign In'})}
+function loginUser(){const username=<LaTex>id_20</LaTex>('loginPassword').value;if(!username){showAuthError('Please enter your username.');return}if(!pw){showAuthError('Please enter your password.');return}<LaTex>id_21</LaTex>('loginBtn').textContent='Signing in...';auth.signInWithEmailAndPassword(usernameToEmail(username),pw).then(()=>{showAuthError('')}).catch(err=>{showAuthError(getAuthErrorMessage(err.code));<LaTex>id_22</LaTex>('loginBtn').textContent='Sign In'})}
 function logout(){auth.signOut().then(()=>{location.reload()})}
-document.addEventListener('keydown',function(e){if(e.key!=='Enter')return;if(!$('authOverlay').classList.contains('hidden')){e.preventDefault();if($('loginForm').classList.contains('on'))loginUser();else registerUser()}});
+document.addEventListener('keydown',function(e){if(e.key!=='Enter')return;if(!<LaTex>id_23</LaTex>('loginForm').classList.contains('on'))loginUser();else registerUser()}});
 
 /* CHESS ENGINE */
 const FILES='abcdefgh';const FE='\uFE0E';
@@ -443,25 +497,12 @@ let myGameId=null,viewGameId=null,sel=null,selMoves=null;let viewReviewIndex=nul
 let dismissedChallenges={},activeChallengeId=null,currentSpectatingId=null;
 let createColor='w',createTime=0,practiceColor='w';let chalTarget=null,chalColor='w',chalTime=0;
 let clockInterval=null,chatRef=null,chatGameId=null;let activeChatRef=null,activeChatOther=null,myInbox={};
-let serverTimeOffset=0;let appStarted=false;
+let serverTimeOffset=0;let appStarted=false;let legendaryCategory='elo';let mobilePanelsInit=false;
 db.ref('.info/serverTimeOffset').on('value',snap=>{serverTimeOffset=snap.val()||0});
 function serverNow(){return Date.now()+serverTimeOffset}
 function isOnline(u){if(!u)return false;if(u.online===false)return false;if(u.lastSeen)return(serverNow()-u.lastSeen)<90000;return u.online===true}
-function $(id){return document.getElementById(id)}
-function show(s){['lobby','gameScreen'].forEach(x=>$(x).classList.add('hidden'));$(s).classList.remove('hidden')}
-function getMyElo(){if(!firebaseUsersLoaded)return null;if(allUsers[token]&&allUsers[token].elo!==undefined&&allUsers[token].elo!==null)return Number(allUsers[token].elo);return 900}
-
-auth.onAuthStateChanged(user=>{
-  if(user){token=user.uid;db.ref('users/'+token).once('value').then(snap=>{
-    if(snap.exists()){const ud=snap.val();
-      if(ud.status==='blocked'){auth.signOut();showAuthError('Your account has been blocked. Contact an administrator.');$('authError').style.color='var(--red)';return}
-      if(ud.status==='pending'){auth.signOut();showAuthError('Your account is awaiting admin approval. Please check back later.');$('authError').style.color='var(--amber)';return}
-      name=ud.name||'Player';
-    }else{name='Player';db.ref('users/'+token).set({name:name,username:'player',elo:900,online:true,status:'active',lastSeen:firebase.database.ServerValue.TIMESTAMP})}
-    $('authOverlay').classList.add('hidden');$('logoutBtn').style.display='';
-    if(!appStarted){appStarted=true;startApp()}
-  })}
-  else{token=null;name='';appStarted=false;firebaseUsersLoaded=false;$('authOverlay').classList.remove('hidden');$('logoutBtn').style.display='none';$('myslot').innerHTML='';$('loginBtn').disabled=false;$('loginBtn').textContent='Sign In';$('regBtn').disabled=false;$('regBtn').textContent='Create Account';$('authError').style.color=''}
+function <LaTex>id_24</LaTex>(x).classList.add('hidden'));<LaTex>id_25</LaTex>('authError').style.color='var(--red)';return}
+      if(ud.status==='pending'){auth.signOut();showAuthError('Your account is awaiting admin approval. Please check back later.');<LaTex>id_26</LaTex>('authOverlay').classList.add('hidden');<LaTex>id_27</LaTex>('authOverlay').classList.remove('hidden');<LaTex>id_28</LaTex>('myslot').innerHTML='';<LaTex>id_29</LaTex>('loginBtn').textContent='Sign In';<LaTex>id_30</LaTex>('regBtn').textContent='Create Account';$('authError').style.color=''}
 });
 
 function startApp(){setupPresence();db.ref('users').on('value',s=>{allUsers=s.val()||{};firebaseUsersLoaded=true;cleanupStaleOpenGames();render()});db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();cleanupStaleOpenGames();Object.keys(allGames).forEach(id=>{const g=allGames[id];if(g&&g.status==='finished')applyMyElo(id,g)});render()});db.ref('users/'+token+'/chats').on('value',snap=>{myInbox=snap.val()||{};renderInbox();updateUnreadBadge()});loadExistingConversations();render()}
@@ -475,27 +516,13 @@ function joinSpectators(gid){const r=db.ref('games/'+gid+'/spectators/'+token);r
 function leaveSpectators(gid){db.ref('games/'+gid+'/spectators/'+token).remove()}
 function updateSpectating(gid){if(currentSpectatingId===gid)return;if(currentSpectatingId)leaveSpectators(currentSpectatingId);currentSpectatingId=gid;if(gid){const g=allGames[gid];const ip=g&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token));if(!ip)joinSpectators(gid)}}
 function setChatGame(gid){if(chatGameId===gid)return;if(chatRef){chatRef.off();chatRef=null}chatGameId=gid;if(gid){chatRef=db.ref('games/'+gid+'/chat');chatRef.on('value',s=>renderChat(s.val()||{}))}else renderChat({})}
-function renderChat(chat){const list=$('chatList');if(!list)return;const arr=Object.keys(chat).map(k=>chat[k]).sort((a,b)=>(a.ts||0)-(b.ts||0));list.innerHTML=arr.map(m=>'<div class="chat-msg"><b>'+escapeHtml(m.name||'?')+':</b> '+escapeHtml(m.text||'')+'</div>').join('');list.scrollTop=list.scrollHeight}
-function sendChat(){const inp=$('chatInput');if(!inp)return;const t=inp.value.trim();if(!t||!viewGameId)return;db.ref('games/'+viewGameId+'/chat').push({name:name,text:t,ts:firebase.database.ServerValue.TIMESTAMP});inp.value=''}
-function formatChatTime(ts){if(!ts)return '';const d=new Date(ts),n=new Date();if(d.toDateString()===n.toDateString())return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});if(n-d<6048e5)return d.toLocaleDateString([],{weekday:'short'});return d.toLocaleDateString([],{month:'short',day:'numeric'})}
-function renderInbox(){const list=$('inboxList');if(!list)return;const keys=Object.keys(myInbox).sort((a,b)=>(myInbox[b].ts||0)-(myInbox[a].ts||0));if(!keys.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No messages yet.</p>';return}let html='';keys.forEach(ot=>{const ch=myInbox[ot]||{},u=allUsers[ot];const pn=u?escapeHtml(u.name||'Player'):'Unknown';const ini=u&&u.name?escapeHtml(u.name.trim().charAt(0).toUpperCase()):'?';const ur=ch.unread||0;let pv='No messages yet';if(ch.last&&typeof ch.last==='string'){let sn='';if(ch.lastFrom===token)sn='You';else if(ch.lastFrom){const su=allUsers[ch.lastFrom];sn=su?escapeHtml(su.name||'Player'):'Player'}const raw=sn?sn+': '+ch.last:ch.last;pv=escapeHtml(raw.substring(0,70))+(raw.length>70?'…':'')}const tm=formatChatTime(ch.ts);html+='<div class="msg-inbox-item" data-token="'+ot+'"><div class="msg-avatar">'+ini+'</div><div class="msg-inbox-main"><div class="msg-inbox-top"><div class="msg-inbox-name">'+pn+'</div><div class="msg-inbox-time">'+tm+'</div></div><div class="msg-inbox-preview">'+pv+'</div></div>'+(ur>0?'<div class="msg-unread-badge">'+ur+'</div>':'')+'</div>'});list.innerHTML=html;list.querySelectorAll('.msg-inbox-item').forEach(el=>{el.onclick=()=>openChat(el.dataset.token)})}
-function updateUnreadBadge(){let t=0;Object.values(myInbox).forEach(c=>{t+=(c.unread||0)});const b=$('unreadBadge');if(!b)return;if(t>0){b.textContent=t;b.style.display='inline-block'}else b.style.display='none'}
-function openChat(ot){$('inboxList').style.display='none';$('inboxList').parentElement.querySelector('h2').style.display='none';$('chatView').classList.remove('hidden');const u=allUsers[ot];$('chatWith').textContent=u?u.name:'Player';if(activeChatRef)activeChatRef.off();activeChatOther=ot;const cid=[token,ot].sort().join('_');activeChatRef=db.ref('dms/'+cid);activeChatRef.on('value',snap=>{const msgs=snap.val()||{};const arr=Object.entries(msgs).map(([k,v])=>Object.assign({key:k},v)).sort((a,b)=>(a.ts||0)-(b.ts||0)||String(a.key).localeCompare(String(b.key)));let html='';arr.forEach(m=>{const me=m.f===token;const tm=m.ts?new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';const sl=me?'You':escapeHtml(u?u.name:'Player');html+='<div class="msg-row '+(me?'me':'them')+'"><div class="msg-bubble '+(me?'me':'them')+'">'+escapeHtml(m.txt||'')+'<span class="msg-meta">'+sl+' · '+tm+'</span></div></div>'});if(!html)html='<div style="color:var(--dim);font-size:12px;text-align:center;margin:auto;">No messages yet.</div>';const box=$('pmChatList');box.innerHTML=html;requestAnimationFrame(()=>{box.scrollTop=box.scrollHeight})});db.ref('users/'+token+'/chats/'+ot+'/unread').set(0)}
-function closeChatView(){if(activeChatRef){activeChatRef.off();activeChatRef=null}activeChatOther=null;$('chatView').classList.add('hidden');$('inboxList').style.display='';$('inboxList').parentElement.querySelector('h2').style.display='';renderInbox();updateUnreadBadge()}
-function sendPM(){const inp=$('pmInput');const t=inp.value.trim();if(!t||!activeChatOther)return;const cid=[token,activeChatOther].sort().join('_');const ts=firebase.database.ServerValue.TIMESTAMP;db.ref('dms/'+cid).push().set({f:token,t:activeChatOther,txt:t,ts:ts});db.ref('users/'+token+'/chats/'+activeChatOther).update({ts:ts,last:t,lastFrom:token,unread:0});const oir=db.ref('users/'+activeChatOther+'/chats/'+token);oir.update({ts:ts,last:t,lastFrom:token});oir.child('unread').transaction(c=>(c||0)+1);myInbox[activeChatOther]=Object.assign(myInbox[activeChatOther]||{},{ts:Date.now(),last:t,lastFrom:token,unread:0});renderInbox();updateUnreadBadge();inp.value='';inp.focus()}
-function openProfile(ut){const u=allUsers[ut];if(!u)return;let html='<h2 style="color:var(--gold);font:400 22px Marcellus,serif;margin-bottom:6px">'+escapeHtml(u.name||'Player')+'</h2>';html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:14px">ELO '+(u.elo||900)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';let pvp={w:0,l:0,d:0},pve={w:0,l:0,d:0},tg=0;Object.keys(allGames).forEach(id=>{const g=allGames[id];if(!g||g.status!=='finished')return;if(!((g.white&&g.white.token===ut)||(g.black&&g.black.token===ut)))return;tg++;const res=resultForPlayer(g,ut);if(!res)return;if(g.vsAI){if(res==='win')pve.w++;else if(res==='loss')pve.l++;else pve.d++}else{if(res==='win')pvp.w++;else if(res==='loss')pvp.l++;else pvp.d++}});html+='<div class="profile-stats-grid"><div class="profile-stat-box"><div class="profile-stat-title">Vs Players</div><div class="profile-stat-nums"><span style="color:var(--good)">'+pvp.w+'W</span><span style="color:var(--dim)">'+pvp.d+'D</span><span style="color:#f0908c">'+pvp.l+'L</span></div></div><div class="profile-stat-box"><div class="profile-stat-title">Vs Computer</div><div class="profile-stat-nums"><span style="color:var(--good)">'+pve.w+'W</span><span style="color:var(--dim)">'+pve.d+'D</span><span style="color:#f0908c">'+pve.l+'L</span></div></div></div>';const tgr=Object.keys(allGames).filter(id=>{const g=allGames[id];return(g.white&&g.white.token===ut)||(g.black&&g.black.token===ut)}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0)).slice(0,5);html+='<h3 style="font:400 15px Marcellus,serif;color:var(--gold-hi);margin:12px 0 4px">Recent Games ('+tg+' Total)</h3><div class="profile-games-scroll">';if(!tgr.length)html+='<div style="color:var(--dim);font-size:12px;padding:10px 0;">No games yet</div>';tgr.forEach(id=>{const g=allGames[id];const wn=g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—');const bn=g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—');const res=resultForPlayer(g,ut);let rb='';if(res==='win')rb='<span class="badge" style="background:rgba(127,214,160,.15);color:var(--good);border-color:rgba(127,214,160,.4);margin-left:6px">WIN</span>';else if(res==='loss')rb='<span class="badge" style="background:rgba(224,82,82,.15);color:#f0908c;border-color:rgba(224,82,82,.4);margin-left:6px">LOSS</span>';else if(res==='draw')rb='<span class="badge" style="background:rgba(230,192,105,.15);color:var(--amber);border-color:rgba(230,192,105,.4);margin-left:6px">DRAW</span>';const st2=g.status==='finished'?(g.result||'finished'):(g.status+(g.vsAI?' · practice':''));html+='<div class="item" style="margin-bottom:6px"><div class="grow"><div class="nm" style="cursor:default">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+rb+'</div><div class="sub">'+escapeHtml(st2)+'</div></div><button class="btn sm" onclick="viewFromProfile(\''+id+'\')">View</button></div>'});html+='</div>';$('profileContent').innerHTML=html;$('profileModal').classList.remove('hidden')}
-function viewFromProfile(id){$('profileModal').classList.add('hidden');goToGame(id)}
-function findMyGame(){for(const id in allGames){const g=allGames[id];if(!g.vsAI&&(g.status==='waiting'||g.status==='playing')&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token)))return id}return null}
-function findPracticeGame(){for(const id in allGames){const g=allGames[id];if(g.vsAI&&g.status==='playing'&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token)))return id}return null}
-function startPractice(){const ex=findPracticeGame();const go=()=>{sfInit();const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(practiceColor==='w')w=me;else b=me;db.ref('games/'+id).set({status:'playing',vsAI:true,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo()||900,timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)};if(ex){if(!confirm("Abandon active practice game and start new?"))return;abandonGame(ex).then(go)}else go()}
-function abandonGame(id){return db.ref('games/'+id).transaction(g=>{if(!g)return;if(g.status!=='playing'&&g.status!=='waiting')return;g.status='finished';g.result='0-0 · Game abandoned by player';return g})}
-function createOpenGame(){const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(createColor==='w')w=me;else if(createColor==='b')b=me;else{if(Math.random()<0.5)w=me;else b=me}db.ref('games/'+id).set({status:'waiting',vsAI:false,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,challengedToken:null,timeControl:createTime,wtime:createTime,btime:createTime,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)}
-function openChallengeModal(tt,tn){chalTarget=tt;chalColor='w';chalTime=0;$('chalTargetName').textContent=tn;document.querySelectorAll('#chalColorSeg button').forEach(b=>b.classList.toggle('on',b.dataset.c==='w'));document.querySelectorAll('#chalTimeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t==='0'));$('challengeModal').classList.remove('hidden')}
-function sendChallenge(tt,c,t){const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(c==='w')w=me;else if(c==='b')b=me;else{if(Math.random()<0.5)w=me;else b=me}db.ref('games/'+id).set({status:'waiting',vsAI:false,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,challengedToken:tt,timeControl:t,wtime:t,btime:t,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)}
-function joinGame(id){db.ref('games/'+id).transaction(g=>{if(!g||g.status!=='waiting')return;if(g.challengedToken&&g.challengedToken!==token)return;const me={token,name};if(!g.white)g.white=me;else if(!g.black)g.black=me;else return;if(g.white&&g.black){g.status='playing';g.turn='w';g.turnStart=firebase.database.ServerValue.TIMESTAMP}return g}).then(()=>{goToGame(id);setInGame(id)})}
-function cancelGame(id){db.ref('games/'+id).transaction(g=>{if(!g)return;if(g.status!=='waiting')return;const alone=(!g.white||g.white.token===token)&&(!g.black||g.black.token===token);if(!alone)return;return null}).then(()=>{goToLobby();setInGame(null)})}
-function checkForChallenge(){if(activeChallengeId&&!allGames[activeChallengeId]){activeChallengeId=null;$('incomingModal').classList.add('hidden')}if(activeChallengeId)return;for(const id in allGames){const g=allGames[id];if(g.status==='waiting'&&g.challengedToken===token&&!dismissedChallenges[id]){showIncomingChallenge(id,g);break}}}
-function showIncomingChallenge(id,g){activeChallengeId=id;const ch=g.white?g.white.name:(g.black?g.black.name:'Someone');const tt=g.timeControl?Math.round(g.timeControl/60)+' min':'No time';$('incomingText').textContent=ch+' challenges you! ('+tt+')';$('incomingAccept').onclick=()=>{activeChallengeId=null;$('incomingModal').classList.add('hidden');joinGame(id)};$('incomingDecline').onclick=()=>{dismissedChallenges[id]=true;activeChallengeId=null;$('incomingModal').classList.add('hidden');cancelGame(id)};$('incomingModal').classList.remove('hidden')}
+function renderChat(chat){const list=$('chatList');if(!list)return;const arr=Object.keys(chat).map(k=>chat[k]).sort((a,b)=>(a.ts||0)-(b.ts||0));list.innerHTML=arr.map(m=>'<div class="chat-msg"><b>'+escapeHtml(m.name||'?')+':</b> '+escapeHtml(m.text||'')+'</div>').join('');list.scrollTop=list.scrollHeight;if(<LaTex>id_31</LaTex>('chatBadge').textContent=arr.length}
+function sendChat(){const inp=<LaTex>id_32</LaTex>('inboxList');if(!list)return;const keys=Object.keys(myInbox).sort((a,b)=>(myInbox[b].ts||0)-(myInbox[a].ts||0));if(!keys.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No messages yet.</p>';return}let html='';keys.forEach(ot=>{const ch=myInbox[ot]||{},u=allUsers[ot];const pn=u?escapeHtml(u.name||'Player'):'Unknown';const ini=u&&u.name?escapeHtml(u.name.trim().charAt(0).toUpperCase()):'?';const ur=ch.unread||0;let pv='No messages yet';if(ch.last&&typeof ch.last==='string'){let sn='';if(ch.lastFrom===token)sn='You';else if(ch.lastFrom){const su=allUsers[ch.lastFrom];sn=su?escapeHtml(su.name||'Player'):'Player'}const raw=sn?sn+': '+ch.last:ch.last;pv=escapeHtml(raw.substring(0,70))+(raw.length>70?'…':'')}const tm=formatChatTime(ch.ts);html+='<div class="msg-inbox-item" data-token="'+ot+'"><div class="msg-avatar">'+ini+'</div><div class="msg-inbox-main"><div class="msg-inbox-top"><div class="msg-inbox-name">'+pn+'</div><div class="msg-inbox-time">'+tm+'</div></div><div class="msg-inbox-preview">'+pv+'</div></div>'+(ur>0?'<div class="msg-unread-badge">'+ur+'</div>':'')+'</div>'});list.innerHTML=html;list.querySelectorAll('.msg-inbox-item').forEach(el=>{el.onclick=()=>openChat(el.dataset.token)})}
+function updateUnreadBadge(){let t=0;Object.values(myInbox).forEach(c=>{t+=(c.unread||0)});const b=<LaTex>id_33</LaTex>('inboxList').style.display='none';<LaTex>id_34</LaTex>('chatView').classList.remove('hidden');const u=allUsers[ot];<LaTex>id_35</LaTex>('pmChatList');box.innerHTML=html;requestAnimationFrame(()=>{box.scrollTop=box.scrollHeight})});db.ref('users/'+token+'/chats/'+ot+'/unread').set(0)}
+function closeChatView(){if(activeChatRef){activeChatRef.off();activeChatRef=null}activeChatOther=null;<LaTex>id_36</LaTex>('inboxList').style.display='';<LaTex>id_37</LaTex>('pmInput');const t=inp.value.trim();if(!t||!activeChatOther)return;const cid=[token,activeChatOther].sort().join('_');const ts=firebase.database.ServerValue.TIMESTAMP;db.ref('dms/'+cid).push().set({f:token,t:activeChatOther,txt:t,ts:ts});db.ref('users/'+token+'/chats/'+activeChatOther).update({ts:ts,last:t,lastFrom:token,unread:0});const oir=db.ref('users/'+activeChatOther+'/chats/'+token);oir.update({ts:ts,last:t,lastFrom:token});oir.child('unread').transaction(c=>(c||0)+1);myInbox[activeChatOther]=Object.assign(myInbox[activeChatOther]||{},{ts:Date.now(),last:t,lastFrom:token,unread:0});renderInbox();updateUnreadBadge();inp.value='';inp.focus()}
+function openProfile(ut){const u=allUsers[ut];if(!u)return;let html='<h2 style="color:var(--gold);font:400 22px Marcellus,serif;margin-bottom:6px">'+escapeHtml(u.name||'Player')+'</h2>';html+='<div style="font:500 12px \'IBM Plex Mono\',monospace;color:var(--dim);margin-bottom:14px">ELO '+(u.elo||900)+' · '+(isOnline(u)?'<span style="color:var(--good)">Online</span>':'Offline')+'</div>';let pvp={w:0,l:0,d:0},pve={w:0,l:0,d:0},tg=0;Object.keys(allGames).forEach(id=>{const g=allGames[id];if(!g||g.status!=='finished')return;if(!((g.white&&g.white.token===ut)||(g.black&&g.black.token===ut)))return;tg++;const res=resultForPlayer(g,ut);if(!res)return;if(g.vsAI){if(res==='win')pve.w++;else if(res==='loss')pve.l++;else pve.d++}else{if(res==='win')pvp.w++;else if(res==='loss')pvp.l++;else pvp.d++}});html+='<div class="profile-stats-grid"><div class="profile-stat-box"><div class="profile-stat-title">Vs Players</div><div class="profile-stat-nums"><span style="color:var(--good)">'+pvp.w+'W</span><span style="color:var(--dim)">'+pvp.d+'D</span><span style="color:#f0908c">'+pvp.l+'L</span></div></div><div class="profile-stat-box"><div class="profile-stat-title">Vs Computer</div><div class="profile-stat-nums"><span style="color:var(--good)">'+pve.w+'W</span><span style="color:var(--dim)">'+pve.d+'D</span><span style="color:#f0908c">'+pve.l+'L</span></div></div></div>';const tgr=Object.keys(allGames).filter(id=>{const g=allGames[id];return(g.white&&g.white.token===ut)||(g.black&&g.black.token===ut)}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0)).slice(0,5);html+='<h3 style="font:400 15px Marcellus,serif;color:var(--gold-hi);margin:12px 0 4px">Recent Games ('+tg+' Total)</h3><div class="profile-games-scroll">';if(!tgr.length)html+='<div style="color:var(--dim);font-size:12px;padding:10px 0;">No games yet</div>';tgr.forEach(id=>{const g=allGames[id];const wn=g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—');const bn=g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—');const res=resultForPlayer(g,ut);let rb='';if(res==='win')rb='<span class="badge" style="background:rgba(127,214,160,.15);color:var(--good);border-color:rgba(127,214,160,.4);margin-left:6px">WIN</span>';else if(res==='loss')rb='<span class="badge" style="background:rgba(224,82,82,.15);color:#f0908c;border-color:rgba(224,82,82,.4);margin-left:6px">LOSS</span>';else if(res==='draw')rb='<span class="badge" style="background:rgba(230,192,105,.15);color:var(--amber);border-color:rgba(230,192,105,.4);margin-left:6px">DRAW</span>';const st2=g.status==='finished'?(g.result||'finished'):(g.status+(g.vsAI?' · practice':''));html+='<div class="item" style="margin-bottom:6px"><div class="grow"><div class="nm" style="cursor:default">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+rb+'</div><div class="sub">'+escapeHtml(st2)+'</div></div><button class="btn sm" onclick="viewFromProfile(\''+id+'\')">View</button></div>'});html+='</div>';<LaTex>id_38</LaTex>('profileModal').classList.remove('hidden')}
+function viewFromProfile(id){<LaTex>id_39</LaTex>('chalTargetName').textContent=tn;document.querySelectorAll('#chalColorSeg button').forEach(b=>b.classList.toggle('on',b.dataset.c==='w'));document.querySelectorAll('#chalTimeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t==='0'));<LaTex>id_40</LaTex>('incomingModal').classList.add('hidden')}if(activeChallengeId)return;for(const id in allGames){const g=allGames[id];if(g.status==='waiting'&&g.challengedToken===token&&!dismissedChallenges[id]){showIncomingChallenge(id,g);break}}}
+function showIncomingChallenge(id,g){activeChallengeId=id;const ch=g.white?g.white.name:(g.black?g.black.name:'Someone');const tt=g.timeControl?Math.round(g.timeControl/60)+' min':'No time';<LaTex>id_41</LaTex>('incomingAccept').onclick=()=>{activeChallengeId=null;<LaTex>id_42</LaTex>('incomingDecline').onclick=()=>{dismissedChallenges[id]=true;activeChallengeId=null;<LaTex>id_43</LaTex>('incomingModal').classList.remove('hidden')}
 function getCurrentTimes(g){if(!g.timeControl)return{w:null,b:null};let w=g.wtime,b=g.btime;if(g.status==='playing'&&g.turnStart){const el=(serverNow()-g.turnStart)/1000;if(g.turn==='w')w=Math.max(0,w-el);else b=Math.max(0,b-el)}return{w,b}}
 function calculateElo(pe,oe,sc){let K=32;if(pe>=1200&&pe<1800)K=24;else if(pe>=1800)K=16;if(pe<800)K=40;const exp=1/(1+Math.pow(10,(oe-pe)/400));return Math.round(Math.max(100,pe+K*(sc-exp)))}
 function estimateAIOpponentElo(pe){if(pe>=1350)return clamp(pe,1350,2850);if(pe>=901)return 1100;if(pe>=601)return 800;return 500}
@@ -510,27 +537,66 @@ function applyAIMove(gid,md,hc,sb){db.ref('games/'+gid).transaction(g=>{if(!g||g
 function cleanupStaleOpenGames(){if(!allGames||!Object.keys(allUsers).length)return;const now=serverNow();for(const id in allGames){const g=allGames[id];if(!g||g.vsAI||g.status!=='waiting')continue;if(g.createdAt&&now-g.createdAt<20000)continue;const owner=g.white||g.black;if(!owner){db.ref('games/'+id).remove();continue}const ou=allUsers[owner.token];if(!ou||!isOnline(ou)){db.ref('games/'+id).transaction(c=>{if(!c)return;if(c.status!=='waiting')return;return null})}}}
 function goToGame(id){viewGameId=id;viewReviewIndex=null;updateSpectating(id);setChatGame(id);render()}
 function goToLobby(){updateSpectating(null);setChatGame(null);viewGameId=null;setInGame(null);render()}
-function startClockTick(){if(clockInterval)clearInterval(clockInterval);clockInterval=setInterval(()=>{const g=viewGameId?allGames[viewGameId]:null;if(!g||!g.timeControl||g.status!=='playing')return;const t=getCurrentTimes(g);const we=$('clockW'),be=$('clockB');if(we)we.textContent=fmtClock(t.w);if(be)be.textContent=fmtClock(t.b);if(we){we.classList.toggle('running',g.turn==='w');we.classList.toggle('low',t.w<30)}if(be){be.classList.toggle('running',g.turn==='b');be.classList.toggle('low',t.b<30)}if(t.w<=0)flagTime('w');if(t.b<=0)flagTime('b')},200)}
+function startClockTick(){if(clockInterval)clearInterval(clockInterval);clockInterval=setInterval(()=>{const g=viewGameId?allGames[viewGameId]:null;if(!g||!g.timeControl||g.status!=='playing')return;const t=getCurrentTimes(g);const we=<LaTex>id_44</LaTex>('clockB');if(we)we.textContent=fmtClock(t.w);if(be)be.textContent=fmtClock(t.b);if(we){we.classList.toggle('running',g.turn==='w');we.classList.toggle('low',t.w<30)}if(be){be.classList.toggle('running',g.turn==='b');be.classList.toggle('low',t.b<30)}if(t.w<=0)flagTime('w');if(t.b<=0)flagTime('b')},200)}
 function fmtClock(s){if(s==null)return'';s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
-function render(){const elo=getMyElo();if(!firebaseUsersLoaded){$('myslot').innerHTML=name?'Signed in as <b>'+escapeHtml(name)+'</b><br>ELO <span class="elo-spinner"></span>':''}else{$('myslot').innerHTML=name?'Signed in as <b>'+escapeHtml(name)+'</b><br>ELO <b>'+elo+'</b>':''}if(!name){show('lobby');return}if($('practiceElo')){if(!firebaseUsersLoaded)$('practiceElo').innerHTML='<span class="elo-spinner"></span>';else $('practiceElo').textContent=elo}const ag=viewGameId?allGames[viewGameId]:null;if(ag){if(currentViewId!==viewGameId){currentViewId=viewGameId;viewReviewIndex=null}renderGame(viewGameId,ag);show('gameScreen');startClockTick();return}setChatGame(null);renderLobby();show('lobby');if(clockInterval){clearInterval(clockInterval);clockInterval=null}}
-function renderLobby(){renderPlayersList();renderGameList();renderPracticeTab()}
-function renderPracticeTab(){const ex=findPracticeGame();const ra=$('resumePracticeArea'),rb=$('resumePracticeBtn'),pb=$('practiceBtn');if(ex){if(ra)ra.style.display='block';if(rb)rb.onclick=()=>goToGame(ex);if(pb){pb.textContent='⚠️ Abandon & Start New';pb.classList.remove('primary');pb.classList.add('danger')}}else{if(ra)ra.style.display='none';if(pb){pb.textContent='Start New Practice';pb.classList.add('primary');pb.classList.remove('danger')}}}
-function renderPlayersList(){const list=$('playersList');list.innerHTML='';const ua=Object.keys(allUsers).map(t=>({token:t,...allUsers[t]})).filter(u=>u.name&&u.status!=='pending');ua.sort((a,b)=>(b.elo||900)-(a.elo||900));if(!ua.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No players yet.</p>';return}ua.forEach((u,i)=>{const isMe=u.token===token;const on=isOnline(u);const agi=getPlayerActiveGame(u.token);const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'<span style="color:var(--dim)">#'+(i+1)+'</span>';const div=document.createElement('div');div.className='item';let ah='';if(isMe)ah='<span class="badge me">YOU</span>';else if(u.status==='blocked')ah='<span class="badge blocked">BLOCKED</span>';else if(agi&&on)ah='<button class="btn sm" data-act="watch" data-gid="'+agi+'">👁 Watch</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';else if(on)ah='<button class="btn sm primary" data-act="challenge" data-token="'+u.token+'">Challenge</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';else ah='<span class="badge">offline</span> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';div.innerHTML='<div style="font-size:18px;width:30px;text-align:center">'+medal+'</div><div class="grow"><div class="nm" data-act="profile" data-token="'+u.token+'" style="cursor:pointer"><span class="onlinedot '+(on?'on':'off')+'"></span>'+escapeHtml(u.name||'Player')+'</div><div class="sub">ELO '+(u.elo||900)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">'+ah+'</div>';const pb2=div.querySelector('[data-act=profile]');if(pb2)pb2.onclick=()=>openProfile(u.token);const wb=div.querySelector('[data-act=watch]');if(wb)wb.onclick=()=>goToGame(agi);const cb=div.querySelector('[data-act=challenge]');if(cb)cb.onclick=()=>openChallengeModal(u.token,u.name);const pm=div.querySelector('[data-act=pm]');if(pm)pm.onclick=()=>{document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('on'));document.querySelector('[data-tab="messages"]').classList.add('on');document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));$('tab-messages').classList.remove('hidden');openChat(u.token)};list.appendChild(div)})}
-function renderGameList(){const gl=$('gameList');gl.innerHTML='';const gids=Object.keys(allGames).filter(id=>{const g=allGames[id];if(!g||g.vsAI)return false;if(g.status==='finished'||g.status==='closed')return false;if(g.challengedToken&&g.challengedToken!==token)return false;if(g.status==='waiting'){const o=g.white||g.black;if(o&&allUsers[o.token]&&!isOnline(allUsers[o.token]))return false}return true}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet.</p>';return}gids.forEach(id=>{const g=allGames[id];const div=document.createElement('div');div.className='item';const iam=(g.white&&g.white.token===token)||(g.black&&g.black.token===token);const wn=g.white?escapeHtml(g.white.name||'Player'):'—';const bn=g.black?escapeHtml(g.black.name||'Player'):'Waiting…';let badge='';if(g.status==='waiting')badge='<span class="badge wait">waiting</span>';if(g.status==='playing')badge='<span class="badge play">playing</span>';if(g.timeControl)badge+=' <span class="badge">'+Math.round(g.timeControl/60)+'min</span>';div.innerHTML='<div class="grow"><div class="nm" style="cursor:default">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="sub">'+(g.moves?g.moves.length:0)+' moves</div></div>'+badge;if(iam){if(g.status==='waiting'){const cb=document.createElement('button');cb.className='btn sm danger';cb.textContent='Cancel';cb.onclick=()=>cancelGame(id);div.appendChild(cb)}else{const cb=document.createElement('button');cb.className='btn sm primary';cb.textContent='Continue';cb.onclick=()=>goToGame(id);div.appendChild(cb)}}else{if(g.status==='waiting'){const jb=document.createElement('button');jb.className='btn sm primary';jb.textContent='Join';jb.onclick=()=>joinGame(id);div.appendChild(jb)}else if(g.status==='playing'){const wb=document.createElement('button');wb.className='btn sm';wb.textContent='Watch';wb.onclick=()=>goToGame(id);div.appendChild(wb)}}gl.appendChild(div)})}
-function setPlaque(el,color,pn,isTurn,caps,matAdv,clockId,tv,tr,tl){let ch='';caps.forEach(p=>{ch+='<span class="cap-piece sym '+(p.c==='w'?'wp':'bp')+'">'+GLYPH[p.t]+'</span>'});let ah='';if(matAdv>0)ah='<span class="mat-adv">+'+matAdv+'</span>';let cl='';if(clockId)cl='<div class="clock'+(tr?' running':'')+(tl?' low':'')+'" id="'+clockId+'">'+fmtClock(tv)+'</div>';el.innerHTML='<div class="plaque-left"><div class="pname">'+pn+'</div><div class="psub">'+(color==='w'?'White':'Black')+'</div></div><div class="plaque-right"><div class="caps-row">'+ch+ah+'</div>'+cl+(isTurn?'<div class="turn-dot"></div>':'')+'</div>';el.classList.toggle('active',isTurn)}
-function renderReviewControls(g){const rc=$('reviewControls');if(!rc)return;const fens=g.fens||[g.fen];const tm=(g.moves||[]).length;let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));rc.innerHTML='<button class="btn sm" id="rvFirst">⏮</button><button class="btn sm" id="rvPrev">◀</button><span style="color:var(--dim);font:600 12px \'IBM Plex Mono\',monospace;min-width:90px;text-align:center">Move '+ci+' / '+tm+'</span><button class="btn sm" id="rvNext">▶</button><button class="btn sm" id="rvLast">⏭</button>';$('rvFirst').onclick=()=>{viewReviewIndex=0;render()};$('rvPrev').onclick=()=>{viewReviewIndex=Math.max(0,ci-1);render()};$('rvNext').onclick=()=>{viewReviewIndex=Math.min(tm,ci+1);render()};$('rvLast').onclick=()=>{viewReviewIndex=null;render()};$('rvPrev').disabled=(ci<=0);$('rvFirst').disabled=(ci<=0);$('rvNext').disabled=(ci>=tm);$('rvLast').disabled=(ci>=tm)}
-function renderGame(id,g){updateSpectating(id);const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;const isSpec=!mc;const orient=mc==='b'?'b':'w';const fens=g.fens||[g.fen];let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));const df=fens[ci];const st=fromFEN(df);const atL=(ci>=fens.length-1);const canM=atL&&g.status==='playing'&&mc&&g.turn===mc;const{capW,capB}=getCaptured(st.board);const md=getMaterialAdvantage(st.board);const tc=orient==='w'?'b':'w';const bc=orient==='w'?'w':'b';const tn=tc==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));const bn=bc==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));const tm2=tc==='w'?md:-md;const bm=bc==='w'?md:-md;const times=getCurrentTimes(g);const hc=!!g.timeControl;setPlaque($('topPlaque'),tc,tn,atL&&g.status==='playing'&&g.turn===tc,tc==='w'?capW:capB,tm2>0?tm2:0,hc?('clock'+tc.toUpperCase()):null,hc?(tc==='w'?times.w:times.b):null,hc&&g.status==='playing'&&g.turn===tc,hc&&(tc==='w'?times.w:times.b)<30);setPlaque($('botPlaque'),bc,bn,atL&&g.status==='playing'&&g.turn===bc,bc==='w'?capW:capB,bm>0?bm:0,hc?('clock'+bc.toUpperCase()):null,hc?(bc==='w'?times.w:times.b):null,hc&&g.status==='playing'&&g.turn===bc,hc&&(bc==='w'?times.w:times.b)<30);renderBoard(st,orient,canM,g.lastMove);renderReviewControls(g);const sb=$('statusBanner');sb.className='status-banner';if(g.status==='finished'){sb.classList.add(g.result&&g.result.startsWith('½')?'draw':'win');sb.textContent='Game over — '+g.result}else if(!atL)sb.textContent='Reviewing move '+ci+' of '+(g.moves?g.moves.length:0);else if(canM){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(mc==='w'?'White':'Black')+')'}else if(g.status==='playing'){const tn2=g.turn==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));if(g.vsAI){const ee=g.playerElo||getMyElo()||900;sb.textContent='Computer is thinking… ('+(ee>=1350?'Stockfish':'Default Bot')+')'}else sb.textContent='Waiting for '+tn2+' to move…'}else sb.textContent='Waiting for an opponent to join…';$('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';const specs=g.spectators||{};let sh='';let sc=0;for(const tk in specs){if(specs[tk]){sh+='<div class="spec-item">'+((tk===token)?escapeHtml(specs[tk])+' (You)':escapeHtml(specs[tk]))+'</div>';sc++}}if(!sc)sh='<div style="color:var(--dim);font-size:12px">No spectators yet</div>';$('spectatorList').innerHTML=sh;const db2=$('drawOfferBar');db2.innerHTML='';if(g.status==='playing'&&g.drawOffer&&g.drawOffer!==token&&mc&&!g.vsAI){const other=g.drawOffer===((g.white&&g.white.token)||'')?tn:bn;db2.innerHTML='<div class="drawbar"><span style="flex:1">'+other+' offers a draw</span><button class="btn sm primary" onclick="respondDraw(true)">Accept</button><button class="btn sm" onclick="respondDraw(false)">Decline</button></div>'}const ml=$('moveLog');ml.innerHTML='';const moves=g.moves||[];for(let i=0;i<moves.length;i+=2){const row=document.createElement('div');row.className='mv-row';row.innerHTML='<span class="num">'+((i/2)+1)+'.</span><span class="'+(i===moves.length-1?'cur':'')+'">'+(moves[i]||'')+'</span><span class="'+((i+1)===moves.length-1?'cur':'')+'">'+(moves[i+1]||'')+'</span>';((idx)=>{row.onclick=()=>{viewReviewIndex=idx;render()}})(i);ml.appendChild(row)}ml.scrollTop=ml.scrollHeight;const gc=$('gameControls');gc.innerHTML='';if(mc&&g.status==='playing'&&atL){const rb=document.createElement('button');rb.className='btn danger';rb.textContent='Resign';rb.onclick=resign;gc.appendChild(rb);if(!g.drawOffer&&!g.vsAI){const db3=document.createElement('button');db3.className='btn';db3.textContent='Offer draw';db3.onclick=offerDraw;gc.appendChild(db3)}}if(g.status==='waiting'&&mc){const cb=document.createElement('button');cb.className='btn danger';cb.textContent='Cancel game';cb.onclick=()=>cancelGame(id);gc.appendChild(cb)}if(g.status==='finished'){const nb=document.createElement('button');nb.className='btn primary';nb.textContent='New game';nb.onclick=()=>goToLobby();gc.appendChild(nb)}}
-function renderBoard(st,orient,canM,lastM){const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){const r=orient==='w'?dr:7-dr,c=orient==='w'?dc:7-dc;const sq=document.createElement('div');sq.className='sq '+(((r+c)%2===0)?'light':'dark');if(lastM&&((lastM.fr===r&&lastM.fc===c)||(lastM.tr===r&&lastM.tc===c)))sq.classList.add('last');if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');if(inC&&k[0]===r&&k[1]===c)sq.classList.add('check');const p=b[r][c];if(p){const sp=document.createElement('span');sp.className='piece sym '+(p.c==='w'?'wp':'bp');sp.textContent=GLYPH[p.t];sq.appendChild(sp)}if(canM){if(p&&p.c===st.turn)sq.classList.add('has');if(selMoves){const hit=selMoves.find(m=>m.tr===r&&m.tc===c);if(hit){sq.classList.add('can');const d=document.createElement('div');d.className=(b[r][c]||hit.ep)?'cap-ring':'dot';sq.appendChild(d)}}}if(dc===0){const l=document.createElement('i');l.className='coord rank';l.textContent=8-r;sq.appendChild(l)}if(dr===7){const l=document.createElement('i');l.className='coord file';l.textContent=FILES[c];sq.appendChild(l)}if(canM)sq.addEventListener('click',((rr,cc)=>()=>onSquareClick(st,rr,cc))(r,c));el.appendChild(sq)}}
-function onSquareClick(st,r,c){const b=st.board;const p=b[r][c];if(sel&&selMoves){const cands=selMoves.filter(m=>m.tr===r&&m.tc===c);if(cands.length){if(cands[0].promo){openPromo(cands);return}sel=null;selMoves=null;submitMove(cands[0]);return}}if(p&&p.c===st.turn){if(sel&&sel[0]===r&&sel[1]===c){sel=null;selMoves=null}else{sel=[r,c];selMoves=legalMoves(st).filter(m=>m.fr===r&&m.fc===c)}render();return}if(sel){sel=null;selMoves=null;render()}}
-let pendingPromo=null;
-function openPromo(cands){pendingPromo=cands;const box=$('promoPicks');box.innerHTML='';['q','r','b','n'].forEach(t=>{const btn=document.createElement('button');btn.innerHTML='<span class="pg sym wp">'+GLYPH[t]+'</span>';btn.onclick=()=>{const m=pendingPromo.find(x=>x.promo===t);$('promoModal').classList.add('hidden');sel=null;selMoves=null;if(m)submitMove(m)};box.appendChild(btn)});$('promoModal').classList.remove('hidden')}
-$('backBtn').onclick=()=>goToLobby();$('createGameBtn').onclick=createOpenGame;$('practiceBtn').onclick=startPractice;$('profileClose').onclick=()=>$('profileModal').classList.add('hidden');$('backToInbox').onclick=closeChatView;$('pmSendBtn').onclick=sendPM;
-$('pmInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendPM()}});
-$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendChat()}});
-function bindSeg(id,fn){document.getElementById(id).addEventListener('click',e=>{const v=e.target.dataset.c??e.target.dataset.t;if(v===undefined)return;fn(v);e.currentTarget.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===e.target))})}
-bindSeg('createColorSeg',c=>createColor=c);bindSeg('createTimeSeg',t=>createTime=parseInt(t));bindSeg('practiceColorSeg',c=>practiceColor=c);bindSeg('chalColorSeg',c=>chalColor=c);bindSeg('chalTimeSeg',t=>chalTime=parseInt(t));
-$('chalSendBtn').onclick=()=>{if(!chalTarget)return;sendChallenge(chalTarget,chalColor,chalTime);$('challengeModal').classList.add('hidden')};
-$('chalCancelBtn').onclick=()=>$('challengeModal').classList.add('hidden');
-document.querySelectorAll('.tabbtn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));$('tab-'+btn.dataset.tab).classList.remove('hidden');if(btn.dataset.tab==='messages'){renderInbox();updateUnreadBadge();loadExistingConversations()}})});
-document.querySelectorAll('.panel>header').forEach(h=>{h.addEventListener('click',()=>h.parentElement.classList.toggle('closed'))});
-</script></body></html>
+
+function render(){const elo=getMyElo();if(!firebaseUsersLoaded){<LaTex>id_45</LaTex>('myslot').innerHTML=name?'Signed in as <b>'+escapeHtml(name)+'</b><br>ELO <b>'+elo+'</b>':''}if(!name){show('lobby');return}if(<LaTex>id_46</LaTex>('practiceElo').innerHTML='<span class="elo-spinner"></span>';else <LaTex>id_47</LaTex>('resumePracticeArea'),rb=<LaTex>id_48</LaTex>('practiceBtn');if(ex){if(ra)ra.style.display='block';if(rb)rb.onclick=()=>goToGame(ex);if(pb){pb.textContent='⚠️ Abandon & Start New';pb.classList.remove('primary');pb.classList.add('danger')}}else{if(ra)ra.style.display='none';if(pb){pb.textContent='Start New Practice';pb.classList.add('primary');pb.classList.remove('danger')}}}
+
+/* PLAYERS — shared row builder */
+function buildPlayerRow(u,i,showMedal){
+  const isMe=u.token===token;const on=isOnline(u);const agi=getPlayerActiveGame(u.token);
+  const medal=showMedal?(i===0?'🥇':i===1?'🥈':i===2?'🥉':'<span style="color:var(--dim)">#'+(i+1)+'</span>'):('<span class="onlinedot '+(on?'on':'off')+'" style="margin:0"></span>');
+  const div=document.createElement('div');div.className='item';let ah='';
+  if(isMe)ah='<span class="badge me">YOU</span>';
+  else if(u.status==='blocked')ah='<span class="badge blocked">BLOCKED</span>';
+  else if(agi&&on)ah='<button class="btn sm" data-act="watch" data-gid="'+agi+'">👁 Watch</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';
+  else if(on)ah='<button class="btn sm primary" data-act="challenge" data-token="'+u.token+'">Challenge</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';
+  else ah='<span class="badge">offline</span> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';
+  div.innerHTML='<div style="font-size:18px;width:30px;text-align:center">'+medal+'</div><div class="grow"><div class="nm" data-act="profile" data-token="'+u.token+'" style="cursor:pointer"><span class="onlinedot '+(on?'on':'off')+'"></span>'+escapeHtml(u.name||'Player')+'</div><div class="sub">ELO '+(u.elo||900)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">'+ah+'</div>';
+  const pb2=div.querySelector('[data-act=profile]');if(pb2)pb2.onclick=()=>openProfile(u.token);
+  const wb=div.querySelector('[data-act=watch]');if(wb)wb.onclick=()=>goToGame(agi);
+  const cb=div.querySelector('[data-act=challenge]');if(cb)cb.onclick=()=>openChallengeModal(u.token,u.name);
+  const pm=div.querySelector('[data-act=pm]');if(pm)pm.onclick=()=>{document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('on'));document.querySelector('[data-tab="messages"]').classList.add('on');document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));<LaTex>id_49</LaTex>('playersList');list.innerHTML='';const ua=Object.keys(allUsers).map(t=>({token:t,...allUsers[t]})).filter(u=>u.name&&u.status!=='pending');ua.sort((a,b)=>(b.elo||900)-(a.elo||900));if(!ua.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No players yet.</p>';return}ua.forEach((u,i)=>{list.appendChild(buildPlayerRow(u,i,true))})}
+function renderOnlinePlayers(){const list=<LaTex>id_50</LaTex>('legendaryList');list.innerHTML='';
+  const games=Object.keys(allGames).filter(id=>{
+    const g=allGames[id];
+    if(!g||g.vsAI||g.status!=='finished')return false;
+    if(!g.white||!g.black)return false;
+    if(!g.moves||!g.moves.length)return false;
+    if(g.result&&(g.result.indexOf('abandoned')>=0||g.result.indexOf('0-0')>=0))return false;
+    if(category==='least'&&g.moves.length<4)return false;
+    return true;
+  }).map(id=>{
+    const g=allGames[id];
+    const we=(allUsers[g.white.token]&&allUsers[g.white.token].elo)||900;
+    const be=(allUsers[g.black.token]&&allUsers[g.black.token].elo)||900;
+    let metric;
+    if(category==='elo')metric=we+be;
+    else metric=g.moves.length;
+    return{id,g,we,be,metric};
+  });
+  if(category==='least')games.sort((a,b)=>a.metric-b.metric);
+  else games.sort((a,b)=>b.metric-a.metric);
+  const top=games.slice(0,3);
+  if(!top.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No legendary games yet. Finish a PvP game to make history!</p>';return}
+  const medals=['🥇','🥈','🥉'];
+  top.forEach((entry,i)=>{
+    const div=document.createElement('div');div.className='legend-item';
+    const wn=escapeHtml(entry.g.white.name||'Player');
+    const bn=escapeHtml(entry.g.black.name||'Player');
+    let metricHtml;
+    if(category==='elo')metricHtml='👑 Combined ELO: <b>'+entry.metric+'</b> ('+entry.we+' + '+entry.be+')';
+    else if(category==='most')metricHtml='⚔️ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';
+    else metricHtml='⚡ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';
+    div.innerHTML='<div class="legend-rank">'+medals[i]+'</div><div class="legend-main"><div class="legend-players">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="legend-metric">'+metricHtml+'</div><div class="legend-result">'+escapeHtml(entry.g.result||'finished')+'</div></div>';
+    const wb=document.createElement('button');wb.className='btn sm';wb.textContent='👁 Watch';wb.onclick=()=>goToGame(entry.id);div.appendChild(wb);
+    list.appendChild(div);
+  });
+}
+
+function renderGameList(){const gl=<LaTex>id_51</LaTex>('reviewControls');if(!rc)return;const fens=g.fens||[g.fen];const tm=(g.moves||[]).length;let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));rc.innerHTML='<button class="btn sm" id="rvFirst">⏮</button><button class="btn sm" id="rvPrev">◀</button><span style="color:var(--dim);font:600 12px \'IBM Plex Mono\',monospace;min-width:90px;text-align:center">Move '+ci+' / '+tm+'</span><button class="btn sm" id="rvNext">▶</button><button class="btn sm" id="rvLast">⏭</button>';<LaTex>id_52</LaTex>('rvPrev').onclick=()=>{viewReviewIndex=Math.max(0,ci-1);render()};<LaTex>id_53</LaTex>('rvLast').onclick=()=>{viewReviewIndex=null;render()};<LaTex>id_54</LaTex>('rvFirst').disabled=(ci<=0);<LaTex>id_55</LaTex>('rvLast').disabled=(ci>=tm)}
+
+function renderGame(id,g){
+  updateSpectating(id);
+  const myColor=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
+  const isSpec=!myColor;const orient=
