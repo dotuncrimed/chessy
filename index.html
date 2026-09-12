@@ -26,7 +26,6 @@ h1{font:400 clamp(20px,4vw,30px) Marcellus,serif;letter-spacing:.06em;line-heigh
 .tabbtn.on{color:var(--gold);border-bottom-color:var(--gold)}
 .tab-icon{display:none;font-size:15px}
 .tab-msg-badge{display:none;min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font:800 9px Manrope,sans-serif;place-items:center;padding:0 4px}
-/* NEW: Always-visible tab badge for Players online count */
 .tab-count-badge{display:none;min-width:18px;height:18px;border-radius:99px;background:var(--good);color:#0a1712;font:800 10px Manrope,sans-serif;place-items:center;padding:0 5px;margin-left:2px;box-shadow:0 0 6px rgba(127,214,160,.5)}
 .tab-count-badge.show{display:grid}
 main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
@@ -215,7 +214,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .reg-mode-option input{accent-color:var(--gold)}
 .reg-mode-option .reg-label{font-weight:700;font-size:13px}
 .reg-mode-option .reg-desc{font-size:11px;color:var(--dim)}
-/* ===== BOARD NOTIFICATIONS ===== */
 .board-notify{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:800 clamp(28px,6vw,52px) Marcellus,serif;letter-spacing:.12em;z-index:100;pointer-events:none;animation:boardNotify var(--notify-duration,2s) ease-in-out forwards;text-shadow:0 0 20px rgba(0,0,0,.8),0 4px 8px rgba(0,0,0,.5);white-space:nowrap}
 @keyframes boardNotify{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
 .board-notify.check{color:#ff4444;text-shadow:0 0 30px #ff0000,0 0 60px #ff000088}
@@ -227,7 +225,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .board-notify.yourturn{color:#7fd6a0;text-shadow:0 0 30px #7fd6a0,0 0 60px #7fd6a088}
 .board-notify.resign{color:#f0908c;text-shadow:0 0 30px #e05252,0 0 60px #e0525288}
 .board-notify.start{color:#f2d189;text-shadow:0 0 30px #e0b458,0 0 60px #e0b45888}
-/* ===== SETTINGS ===== */
 .settings-overlay{position:fixed;inset:0;z-index:180;background:rgba(5,10,7,.85);display:grid;place-items:center;padding:16px}
 .settings-box{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--gold);border-radius:14px;padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;position:relative}
 .settings-box h2{font:400 22px Marcellus,serif;color:var(--gold);margin-bottom:16px;text-align:center}
@@ -260,7 +257,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .volume-label{font:600 11px 'IBM Plex Mono',monospace;color:var(--dim);min-width:36px;text-align:right}
 .settings-btn{background:none;border:1px solid var(--line);border-radius:7px;padding:6px 8px;cursor:pointer;font-size:15px;color:var(--dim);transition:.15s;flex-shrink:0}
 .settings-btn:hover{border-color:var(--gold);color:var(--gold)}
-/* ===== BOARD THEMES ===== */
 .board-theme-blue{--sq-light:#dee3e6;--sq-dark:#8ca2ad;--frame-bg:linear-gradient(150deg,#2c3e50,#34495e 55%,#1a252f)}
 .board-theme-green{--sq-light:#eeeed2;--sq-dark:#769656;--frame-bg:linear-gradient(150deg,#2d5a27,#1e3d1a 55%,#142912)}
 .board-theme-dark{--sq-light:#a9a9a9;--sq-dark:#444444;--frame-bg:linear-gradient(150deg,#333,#222 55%,#111)}
@@ -272,13 +268,11 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 #board.themed .sq.dark .coord{color:var(--sq-light)}
 #board.themed .dot{background:rgba(0,0,0,.35)}
 #board.themed .sq.dark .dot{background:rgba(255,255,255,.4)}
-/* ===== PIECE STYLES ===== */
 .piece-svg{position:relative;z-index:1;width:80%;height:80%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
 .cap-piece-svg{vertical-align:middle;margin-left:2px}
 .piece-style-emoji .piece{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 .piece-style-emoji .wp{filter:grayscale(1) brightness(2.5) drop-shadow(0 1px 2px rgba(255,255,255,0.6))}
 .piece-style-emoji .bp{filter:grayscale(1) brightness(0.4) drop-shadow(0 1px 2px rgba(0,0,0,0.8))}
-/* ===== MOBILE ===== */
 @media(max-width:768px){
   :root{--bw:min(98vw,70dvh,600px)}
   header.top{padding:10px 10px 4px;gap:6px 10px}
@@ -437,7 +431,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     </div>
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard"><h2>🎯 Practice vs Computer</h2>
-        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">AI Depth: <b style="color:var(--gold-hi)">3</b> (≤600) · <b style="color:var(--gold-hi)">4</b> (601–900) · <b style="color:var(--gold-hi)">5</b> (901–1349) · <b style="color:var(--gold-hi)">Stockfish</b> (1350+). Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.</p>
+        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">AI Depth: <b style="color:var(--gold-hi)">2</b> (≤600) · <b style="color:var(--gold-hi)">3</b> (601–900) · <b style="color:var(--gold-hi)">4</b> (901–1349) · <b style="color:var(--gold-hi)">Stockfish</b> (1350+). Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.</p>
         <div id="resumePracticeArea" style="display:none;margin-bottom:14px;"><button class="btn primary" id="resumePracticeBtn" style="width:100%;background:var(--good);border-color:var(--good);color:#0a1712;font-size:14px;padding:12px;">▶ Resume Active Game</button></div>
         <div class="opt-group"><div class="opt-label">PLAY AS (For New Game)</div><div class="seg" id="practiceColorSeg"><button data-c="w" class="on">White</button><button data-c="b">Black</button></div></div>
         <button class="btn primary" id="practiceBtn" style="width:100%">Start New Practice</button>
@@ -497,11 +491,9 @@ const firebaseConfig={apiKey:"AIzaSyDRaNr1_SxzDuoL_GZjawNd1nYhRx7jo54",authDomai
 firebase.initializeApp(firebaseConfig);const db=firebase.database();const auth=firebase.auth();
 function $(id){return document.getElementById(id)}
 
-/* NOTIFICATIONS — 5s end-game, 2s untimed, 1s timed */
 let lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null};
 function showBoardNotification(text,colorClass,gameId,isEndGame=false){const frame=document.querySelector('.frame');if(!frame)return;const existing=frame.querySelector('.board-notify');if(existing)existing.remove();const el=document.createElement('div');el.className='board-notify '+colorClass;el.textContent=text;const g=gameId?allGames[gameId]:(viewGameId?allGames[viewGameId]:null);const isTimed=g&&g.timeControl>0;let duration;if(isEndGame){duration=5000}else{duration=isTimed?1000:2000}el.style.setProperty('--notify-duration',(duration/1000)+'s');frame.appendChild(el);setTimeout(()=>{if(el.parentNode)el.remove()},duration+100)}
 
-/* SOUND — FIXED: always try to init/resume on every play */
 class SoundManager{
   constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}
   init(){
@@ -519,7 +511,6 @@ class SoundManager{
   }
   playTone(freq,duration,type='sine',vol=0.3){
     if(!this.enabled)return;
-    // Always try to init + resume on every sound (handles mobile autoplay blocks)
     if(!this.ctx)this.init();
     if(!this.ctx)return;
     if(this.ctx.state==='suspended'){try{this.ctx.resume()}catch(e){}}
@@ -545,13 +536,11 @@ class SoundManager{
   playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}
 }
 const soundMgr=new SoundManager();
-// Aggressive unlock on any user gesture
 const unlockSound=()=>soundMgr.unlock();
 document.addEventListener('click',unlockSound);
 document.addEventListener('touchstart',unlockSound);
 document.addEventListener('keydown',unlockSound);
 
-/* SETTINGS */
 let userPrefs={boardTheme:'classic',pieceStyle:'unicode',soundEnabled:true,soundVolume:70};
 function openSettings(){$('settingsOverlay').classList.remove('hidden');loadSettingsUI()}
 function closeSettings(){$('settingsOverlay').classList.add('hidden')}
@@ -566,7 +555,6 @@ function savePrefs(){if(!token)return;db.ref('users/'+token+'/preferences').set(
 function loadPrefs(){if(!token)return;db.ref('users/'+token+'/preferences').once('value').then(snap=>{if(snap.exists()){const prefs=snap.val();userPrefs={...userPrefs,...prefs};soundMgr.enabled=userPrefs.soundEnabled!==false;soundMgr.volume=(userPrefs.soundVolume||70)/100;applyBoardTheme();applyPieceStyle()}})}
 $('settingsOverlay').addEventListener('click',function(e){if(e.target===this)closeSettings()});
 
-/* PIECE GLYPHS + SVG URLS (white queen link FIXED) */
 const FE='\uFE0E';
 const GLYPH_UNICODE={k:'♚'+FE,q:'♛'+FE,r:'♜'+FE,b:'♝'+FE,n:'♞'+FE,p:'♟'+FE};
 const GLYPH_EMOJI={k:'🤴',q:'👸',r:'🏰',b:'🧙',n:'🐴',p:'🛡️'};
@@ -586,7 +574,6 @@ const SVG_PIECES={
 };
 function getGlyph(t){if(userPrefs.pieceStyle==='emoji')return GLYPH_EMOJI[t];return GLYPH_UNICODE[t]}
 
-/* ADMIN */
 const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
 $('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}$('adminPasswordInput').value='';$('adminPasswordError').textContent='';$('adminPasswordModal').classList.remove('hidden');setTimeout(()=>$('adminPasswordInput').focus(),100)}});
 $('adminPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPassword()});
@@ -605,7 +592,6 @@ function adminUnblock(uid){db.ref('users/'+uid+'/status').set('active');setTimeo
 function adminApprove(uid){db.ref('users/'+uid+'/status').set('active');setTimeout(renderAdminPanel,500)}
 function adminDeny(uid){if(confirm('Deny and remove this registration?')){db.ref('users/'+uid).remove();setTimeout(renderAdminPanel,500)}}
 
-/* AUTH */
 function usernameToEmail(u){return u.toLowerCase().trim()+'@chess.game'}
 function validateUsername(u){if(!u||u.trim().length<3)return 'Username must be at least 3 characters.';if(u.trim().length>20)return 'Username must be 20 characters or less.';if(!/^[a-zA-Z0-9_]+$/.test(u.trim()))return 'Only letters, numbers, and underscores allowed.';return null}
 function switchAuthTab(t){$('authError').textContent='';$('authError').style.color='';if(t==='login'){$('tabLogin').classList.add('on');$('tabRegister').classList.remove('on');$('loginForm').classList.add('on');$('registerForm').classList.remove('on')}else{$('tabRegister').classList.add('on');$('tabLogin').classList.remove('on');$('registerForm').classList.add('on');$('loginForm').classList.remove('on')}}
@@ -616,7 +602,6 @@ function loginUser(){const username=$('loginUsername').value.trim();const pw=$('
 function logout(){auth.signOut().then(()=>{location.reload()})}
 document.addEventListener('keydown',function(e){if(e.key!=='Enter')return;if(!$('authOverlay').classList.contains('hidden')){e.preventDefault();if($('loginForm').classList.contains('on'))loginUser();else registerUser()}});
 
-/* CHESS ENGINE */
 const FILES='abcdefgh';
 const START_FEN='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const KN=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];const RD=[[-1,0],[1,0],[0,-1],[0,1]];const BD=[[-1,-1],[-1,1],[1,-1],[1,1]];const K8=RD.concat(BD);
@@ -637,20 +622,18 @@ function detectEnd(st){const lg=legalMoves(st);if(lg.length===0){const k=findKin
 function uciToInternal(st,uci){if(!uci||uci.length<4)return null;const fc=FILES.indexOf(uci[0]),fr=8-parseInt(uci[1]),tc=FILES.indexOf(uci[2]),tr=8-parseInt(uci[3]),promo=uci.length>4?uci[4]:null;const lg=legalMoves(st);for(const m of lg){if(m.fr===fr&&m.fc===fc&&m.tr===tr&&m.tc===tc&&(!promo||m.promo===promo))return m}return null}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-/* STOCKFISH */
 let sfWorker=null,sfReady=false,sfBestmoveCb=null,sfBusy=false;
 function sfInit(){if(sfWorker)return;if(typeof SF_BASE64==='undefined')return;try{const bin=atob(SF_BASE64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);const url=URL.createObjectURL(new Blob([bytes],{type:'application/javascript'}));sfWorker=new Worker(url);sfWorker.onerror=e=>console.error("SF Error:",e.message);sfWorker.onmessage=e=>{const d=e.data;if(typeof d!=='string')return;d.split('\n').forEach(l=>sfOnMsg(l))};sfWorker.postMessage('uci')}catch(e){console.error("SF init failed:",e)}}
-function sfOnMsg(line){if(!line)return;if(line==='uciok'){sfWorker.postMessage('isready');return}if(line==='readyok'){sfReady=true;return}if(line.indexOf('bestmove')===0){const parts=line.split(' ');if(sfBestmoveCb){const cb=sfBestmoveCb;sfBestmoveCb=null;cb(parts[1])}}}
+function sfOnMsg(line){if(!line)return;if(line==='uciok'){sfWorker.postMessage('isready');return}if(line==='readyak'){sfReady=true;return}if(line.indexOf('bestmove')===0){const parts=line.split(' ');if(sfBestmoveCb){const cb=sfBestmoveCb;sfBestmoveCb=null;cb(parts[1])}}}
 function sfRequestMove(fen,elo,cb){sfInit();if(!sfWorker){cb(null);return}sfBestmoveCb=cb;sfWorker.postMessage('setoption name UCI_LimitStrength value true');sfWorker.postMessage('setoption name UCI_Elo value '+clamp(elo,1350,2850));sfWorker.postMessage('position fen '+fen);sfWorker.postMessage('go movetime 900')}
 
-/* DEFAULT AI — depth 3/4/5, no blunders */
+/* DEFAULT AI — depth 2/3/4, no blunders */
 const AI_PV={p:100,n:320,b:330,r:500,q:900,k:0};
 function evalAI(board,ai){let s=0;for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(!p)continue;let v=AI_PV[p.t]||0;if(p.t!=='r'&&p.t!=='k'){const cd=Math.max(Math.abs(r-3.5),Math.abs(c-3.5));if(cd<=1.5)v+=4;if(cd<=0.5)v+=6}if(p.t==='p')v+=(p.c==='w'?(6-r):(r-1));s+=(p.c==='w'?v:-v)}return ai==='w'?s:-s}
 function movOrd(st,m){const p=st.board[m.fr][m.fc],t=st.board[m.tr][m.tc];let s=0;if(t&&p)s+=10*(AI_PV[t.t]||0)-(AI_PV[p.t]||0);if(m.ep)s+=100;if(m.promo)s+=AI_PV[m.promo]||800;if(m.castle)s+=50;return s}
 function aiSrch(st,d,a,b,ai){const lg=legalMoves(st);if(lg.length===0){const k=findKing(st.board,st.turn);if(isAttacked(st.board,k[0],k[1],opp(st.turn)))return st.turn===ai?-100000-d:100000+d;return 0}if(d<=0)return evalAI(st.board,ai);lg.sort((x,y)=>movOrd(st,y)-movOrd(st,x));if(st.turn===ai){let best=-Infinity;for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v>best)best=v;if(best>a)a=best;if(b<=a)break}return best}else{let best=Infinity;for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v<best)best=v;if(best<b)b=best;if(b<=a)break}return best}}
-function getDefaultAIMove(st,ai,elo){const lg=legalMoves(st);if(!lg.length)return null;let d=3;if(elo>=901&&elo<=1349)d=5;else if(elo>=601&&elo<=900)d=4;let bs=-Infinity,bm=null,al=-Infinity;const ord=lg.slice().sort((a,b)=>movOrd(st,b)-movOrd(st,a));for(const m of ord){const u=makeM(st,m);const sc=aiSrch(st,d-1,al,Infinity,ai);unmakeM(st,m,u);if(sc>bs){bs=sc;bm=m}if(sc>al)al=sc}return bm||lg[0]}
+function getDefaultAIMove(st,ai,elo){const lg=legalMoves(st);if(!lg.length)return null;let d=2;if(elo>=901&&elo<=1349)d=4;else if(elo>=601&&elo<=900)d=3;let bs=-Infinity,bm=null,al=-Infinity;const ord=lg.slice().sort((a,b)=>movOrd(st,b)-movOrd(st,a));for(const m of ord){const u=makeM(st,m);const sc=aiSrch(st,d-1,al,Infinity,ai);unmakeM(st,m,u);if(sc>bs){bs=sc;bm=m}if(sc>al)al=sc}return bm||lg[0]}
 
-/* GLOBAL STATE */
 let token=null,name='';let allUsers={},allGames={};let firebaseUsersLoaded=false;
 let myGameId=null,viewGameId=null,sel=null,selMoves=null;let viewReviewIndex=null,currentViewId=null;
 let dismissedChallenges={},activeChallengeId=null,currentSpectatingId=null;
@@ -663,7 +646,6 @@ function isOnline(u){if(!u)return false;if(u.online===false)return false;if(u.la
 function show(s){['lobby','gameScreen'].forEach(x=>$(x).classList.add('hidden'));$(s).classList.remove('hidden')}
 function getMyElo(){if(!firebaseUsersLoaded)return null;if(allUsers[token]&&allUsers[token].elo!==undefined&&allUsers[token].elo!==null)return Number(allUsers[token].elo);return 900}
 
-/* ONLINE COUNT BADGE */
 function getOnlineCount(){
   if(!firebaseUsersLoaded||!allUsers)return 0;
   let count=0;
@@ -677,13 +659,8 @@ function updateOnlineBadge(){
   const count=getOnlineCount();
   const badge=$('onlineTabBadge');
   if(!badge)return;
-  if(count>0){
-    badge.textContent=count;
-    badge.classList.add('show');
-  }else{
-    badge.textContent='';
-    badge.classList.remove('show');
-  }
+  if(count>0){badge.textContent=count;badge.classList.add('show')}
+  else{badge.textContent='';badge.classList.remove('show')}
 }
 
 auth.onAuthStateChanged(user=>{
