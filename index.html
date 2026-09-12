@@ -26,6 +26,9 @@ h1{font:400 clamp(20px,4vw,30px) Marcellus,serif;letter-spacing:.06em;line-heigh
 .tabbtn.on{color:var(--gold);border-bottom-color:var(--gold)}
 .tab-icon{display:none;font-size:15px}
 .tab-msg-badge{display:none;min-width:16px;height:16px;border-radius:99px;background:var(--red);color:#fff;font:800 9px Manrope,sans-serif;place-items:center;padding:0 4px}
+/* NEW: Always-visible tab badge for Players online count */
+.tab-count-badge{display:none;min-width:18px;height:18px;border-radius:99px;background:var(--good);color:#0a1712;font:800 10px Manrope,sans-serif;place-items:center;padding:0 5px;margin-left:2px;box-shadow:0 0 6px rgba(127,214,160,.5)}
+.tab-count-badge.show{display:grid}
 main{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:16px 20px 40px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;align-items:start}
 @media(max-width:940px){main{grid-template-columns:1fr}}
 .hidden{display:none!important}
@@ -290,6 +293,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   .tab-text{display:none}
   .tab-icon{display:inline}
   .tab-msg-badge{display:grid}
+  .tab-count-badge.show{display:grid}
   main{padding:8px;gap:10px}
   .card{padding:10px;margin-bottom:10px}
   .card h2{font-size:16px;margin-bottom:8px}
@@ -388,7 +392,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       <div class="piece-grid" id="pieceGrid">
         <div class="piece-option" data-style="unicode" onclick="setPieceStyle('unicode')"><div class="piece-preview sym">♚♛♜</div><div class="piece-label">Unicode</div></div>
         <div class="piece-option" data-style="emoji" onclick="setPieceStyle('emoji')"><div class="piece-preview" style="filter:grayscale(1) brightness(2)">🤴👸🏰</div><div class="piece-label">Emoji</div></div>
-        <div class="piece-option" data-style="svg" onclick="setPieceStyle('svg')"><div class="piece-preview"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/1/1f/Chess_qlt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" style="width:24px;height:24px;vertical-align:middle"></div><div class="piece-label">Classic SVG</div></div>
+        <div class="piece-option" data-style="svg" onclick="setPieceStyle('svg')"><div class="piece-preview"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" style="width:24px;height:24px;vertical-align:middle"></div><div class="piece-label">Classic SVG</div></div>
       </div>
     </div>
     <div class="settings-section"><h3>🔊 Sound Effects</h3>
@@ -408,7 +412,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 
 <div class="tabnav" id="tabNav">
   <button class="tabbtn on" data-tab="play"><span class="tab-icon">⚔️</span><span class="tab-text">Play</span></button>
-  <button class="tabbtn" data-tab="players"><span class="tab-icon">👥</span><span class="tab-text">Players</span></button>
+  <button class="tabbtn" data-tab="players"><span class="tab-icon">👥</span><span class="tab-text">Players</span> <span id="onlineTabBadge" class="tab-count-badge"></span></button>
   <button class="tabbtn" data-tab="practice"><span class="tab-icon">🤖</span><span class="tab-text">Practice</span></button>
   <button class="tabbtn" data-tab="legendary"><span class="tab-icon">🏛️</span><span class="tab-text">Legendary</span></button>
   <button class="tabbtn" data-tab="messages"><span class="tab-icon">💬</span><span class="tab-text">Messages</span> <span id="unreadBadge" class="tab-msg-badge"></span></button>
@@ -497,11 +501,55 @@ function $(id){return document.getElementById(id)}
 let lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null};
 function showBoardNotification(text,colorClass,gameId,isEndGame=false){const frame=document.querySelector('.frame');if(!frame)return;const existing=frame.querySelector('.board-notify');if(existing)existing.remove();const el=document.createElement('div');el.className='board-notify '+colorClass;el.textContent=text;const g=gameId?allGames[gameId]:(viewGameId?allGames[viewGameId]:null);const isTimed=g&&g.timeControl>0;let duration;if(isEndGame){duration=5000}else{duration=isTimed?1000:2000}el.style.setProperty('--notify-duration',(duration/1000)+'s');frame.appendChild(el);setTimeout(()=>{if(el.parentNode)el.remove()},duration+100)}
 
-/* SOUND */
-class SoundManager{constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}init(){if(this.initialized)return;try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.initialized=true}catch(e){}}unlock(){if(!this.ctx)this.init();if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()}playTone(freq,duration,type='sine',vol=0.3){if(!this.enabled||!this.ctx)return;if(this.ctx.state==='suspended')this.ctx.resume();const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.connect(gain);gain.connect(this.ctx.destination);osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(this.volume*vol,this.ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+duration);osc.start();osc.stop(this.ctx.currentTime+duration)}playMove(){this.playTone(600,0.08,'sine',0.2);this.playTone(900,0.06,'sine',0.1)}playCapture(){this.playTone(200,0.15,'triangle',0.4);this.playTone(150,0.2,'sawtooth',0.1)}playCheck(){this.playTone(523,0.15,'sine',0.4);setTimeout(()=>this.playTone(784,0.2,'sine',0.4),120)}playCheckmate(){this.playTone(262,0.3,'sine',0.4);setTimeout(()=>this.playTone(330,0.3,'sine',0.4),200);setTimeout(()=>this.playTone(392,0.4,'sine',0.4),400)}playDraw(){this.playTone(440,0.4,'sine',0.3);setTimeout(()=>this.playTone(440,0.6,'sine',0.2),300)}playTimeout(){this.playTone(200,0.3,'square',0.3);setTimeout(()=>this.playTone(150,0.4,'square',0.3),200)}playYourTurn(){this.playTone(880,0.1,'sine',0.2);setTimeout(()=>this.playTone(1100,0.15,'sine',0.25),100)}playStart(){this.playTone(440,0.1,'sine',0.2);setTimeout(()=>this.playTone(550,0.1,'sine',0.2),100);setTimeout(()=>this.playTone(660,0.15,'sine',0.25),200)}playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}}
+/* SOUND — FIXED: always try to init/resume on every play */
+class SoundManager{
+  constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}
+  init(){
+    if(this.initialized)return;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(AC){this.ctx=new AC();this.initialized=true}
+    }catch(e){console.warn('Audio init failed',e)}
+  }
+  unlock(){
+    if(!this.ctx)this.init();
+    if(this.ctx&&this.ctx.state==='suspended'){
+      try{this.ctx.resume()}catch(e){}
+    }
+  }
+  playTone(freq,duration,type='sine',vol=0.3){
+    if(!this.enabled)return;
+    // Always try to init + resume on every sound (handles mobile autoplay blocks)
+    if(!this.ctx)this.init();
+    if(!this.ctx)return;
+    if(this.ctx.state==='suspended'){try{this.ctx.resume()}catch(e){}}
+    try{
+      const osc=this.ctx.createOscillator();
+      const gain=this.ctx.createGain();
+      osc.connect(gain);gain.connect(this.ctx.destination);
+      osc.type=type;osc.frequency.value=freq;
+      const now=this.ctx.currentTime;
+      gain.gain.setValueAtTime(this.volume*vol,now);
+      gain.gain.exponentialRampToValueAtTime(0.01,now+duration);
+      osc.start(now);osc.stop(now+duration);
+    }catch(e){console.warn('Sound play failed',e)}
+  }
+  playMove(){this.playTone(600,0.08,'sine',0.2);this.playTone(900,0.06,'sine',0.1)}
+  playCapture(){this.playTone(200,0.15,'triangle',0.4);this.playTone(150,0.2,'sawtooth',0.1)}
+  playCheck(){this.playTone(523,0.15,'sine',0.4);setTimeout(()=>this.playTone(784,0.2,'sine',0.4),120)}
+  playCheckmate(){this.playTone(262,0.3,'sine',0.4);setTimeout(()=>this.playTone(330,0.3,'sine',0.4),200);setTimeout(()=>this.playTone(392,0.4,'sine',0.4),400)}
+  playDraw(){this.playTone(440,0.4,'sine',0.3);setTimeout(()=>this.playTone(440,0.6,'sine',0.2),300)}
+  playTimeout(){this.playTone(200,0.3,'square',0.3);setTimeout(()=>this.playTone(150,0.4,'square',0.3),200)}
+  playYourTurn(){this.playTone(880,0.1,'sine',0.2);setTimeout(()=>this.playTone(1100,0.15,'sine',0.25),100)}
+  playStart(){this.playTone(440,0.1,'sine',0.2);setTimeout(()=>this.playTone(550,0.1,'sine',0.2),100);setTimeout(()=>this.playTone(660,0.15,'sine',0.25),200)}
+  playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}
+}
 const soundMgr=new SoundManager();
-document.addEventListener('click',()=>soundMgr.unlock(),{once:true});
-document.addEventListener('touchstart',()=>soundMgr.unlock(),{once:true});
+// Aggressive unlock on any user gesture
+const unlockSound=()=>soundMgr.unlock();
+document.addEventListener('click',unlockSound);
+document.addEventListener('touchstart',unlockSound);
+document.addEventListener('keydown',unlockSound);
 
 /* SETTINGS */
 let userPrefs={boardTheme:'classic',pieceStyle:'unicode',soundEnabled:true,soundVolume:70};
@@ -515,26 +563,26 @@ function setVolume(val){userPrefs.soundVolume=parseInt(val);soundMgr.volume=user
 function applyBoardTheme(){const frame=document.querySelector('.frame');const board=$('board');if(!frame||!board)return;frame.classList.remove('board-theme-blue','board-theme-green','board-theme-dark','board-theme-pink','themed');board.classList.remove('themed');if(userPrefs.boardTheme!=='classic'){frame.classList.add('board-theme-'+userPrefs.boardTheme,'themed');board.classList.add('themed')}}
 function applyPieceStyle(){const board=$('board');if(!board)return;board.classList.remove('piece-style-emoji','piece-style-svg');if(userPrefs.pieceStyle==='emoji')board.classList.add('piece-style-emoji');else if(userPrefs.pieceStyle==='svg')board.classList.add('piece-style-svg')}
 function savePrefs(){if(!token)return;db.ref('users/'+token+'/preferences').set(userPrefs)}
-function loadPrefs(){if(!token)return;db.ref('users/'+token+'/preferences').once('value').then(snap=>{if(snap.exists()){const prefs=snap.val();userPrefs={...userPrefs,...prefs};soundMgr.enabled=userPrefs.soundEnabled;soundMgr.volume=userPrefs.soundVolume/100;applyBoardTheme();applyPieceStyle()}})}
+function loadPrefs(){if(!token)return;db.ref('users/'+token+'/preferences').once('value').then(snap=>{if(snap.exists()){const prefs=snap.val();userPrefs={...userPrefs,...prefs};soundMgr.enabled=userPrefs.soundEnabled!==false;soundMgr.volume=(userPrefs.soundVolume||70)/100;applyBoardTheme();applyPieceStyle()}})}
 $('settingsOverlay').addEventListener('click',function(e){if(e.target===this)closeSettings()});
 
-/* PIECE GLYPHS + SVG URLS */
+/* PIECE GLYPHS + SVG URLS (white queen link FIXED) */
 const FE='\uFE0E';
 const GLYPH_UNICODE={k:'♚'+FE,q:'♛'+FE,r:'♜'+FE,b:'♝'+FE,n:'♞'+FE,p:'♟'+FE};
 const GLYPH_EMOJI={k:'🤴',q:'👸',r:'🏰',b:'🧙',n:'🐴',p:'🛡️'};
 const SVG_PIECES={
-  wk:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_klt45.svg',
-  wq:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_qlt45.svg',
-  wr:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_rlt45.svg',
-  wb:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_blt45.svg',
-  wn:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_nlt45.svg',
-  wp:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_plt45.svg',
-  bk:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_kdt45.svg',
-  bq:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_qdt45.svg',
-  br:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_rdt45.svg',
-  bb:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_bdt45.svg',
-  bn:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_ndt45.svg',
-  bp:'https://commons.wikimedia.org/wiki/Special:FilePath/Chess_pdt45.svg'
+  wk:'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg',
+  wq:'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg',
+  wr:'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',
+  wb:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',
+  wn:'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',
+  wp:'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',
+  bk:'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg',
+  bq:'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',
+  br:'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
+  bb:'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
+  bn:'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
+  bp:'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'
 };
 function getGlyph(t){if(userPrefs.pieceStyle==='emoji')return GLYPH_EMOJI[t];return GLYPH_UNICODE[t]}
 
@@ -615,6 +663,29 @@ function isOnline(u){if(!u)return false;if(u.online===false)return false;if(u.la
 function show(s){['lobby','gameScreen'].forEach(x=>$(x).classList.add('hidden'));$(s).classList.remove('hidden')}
 function getMyElo(){if(!firebaseUsersLoaded)return null;if(allUsers[token]&&allUsers[token].elo!==undefined&&allUsers[token].elo!==null)return Number(allUsers[token].elo);return 900}
 
+/* ONLINE COUNT BADGE */
+function getOnlineCount(){
+  if(!firebaseUsersLoaded||!allUsers)return 0;
+  let count=0;
+  for(const uid in allUsers){
+    const u=allUsers[uid];
+    if(u&&u.status!=='pending'&&u.status!=='blocked'&&isOnline(u))count++;
+  }
+  return count;
+}
+function updateOnlineBadge(){
+  const count=getOnlineCount();
+  const badge=$('onlineTabBadge');
+  if(!badge)return;
+  if(count>0){
+    badge.textContent=count;
+    badge.classList.add('show');
+  }else{
+    badge.textContent='';
+    badge.classList.remove('show');
+  }
+}
+
 auth.onAuthStateChanged(user=>{
   if(user){token=user.uid;db.ref('users/'+token).once('value').then(snap=>{
     if(snap.exists()){const ud=snap.val();
@@ -629,7 +700,7 @@ auth.onAuthStateChanged(user=>{
   else{token=null;name='';appStarted=false;firebaseUsersLoaded=false;$('authOverlay').classList.remove('hidden');$('logoutBtn').style.display='none';$('myslot').innerHTML='';$('loginBtn').disabled=false;$('loginBtn').textContent='Sign In';$('regBtn').disabled=false;$('regBtn').textContent='Create Account';$('authError').style.color=''}
 });
 
-function startApp(){setupPresence();db.ref('users').on('value',s=>{allUsers=s.val()||{};firebaseUsersLoaded=true;cleanupStaleOpenGames();render()});db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();cleanupStaleOpenGames();Object.keys(allGames).forEach(id=>{const g=allGames[id];if(g&&g.status==='finished')applyMyElo(id,g)});render()});db.ref('users/'+token+'/chats').on('value',snap=>{myInbox=snap.val()||{};renderInbox();updateUnreadBadge()});loadExistingConversations();loadPrefs();render()}
+function startApp(){setupPresence();db.ref('users').on('value',s=>{allUsers=s.val()||{};firebaseUsersLoaded=true;cleanupStaleOpenGames();updateOnlineBadge();render()});db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();cleanupStaleOpenGames();Object.keys(allGames).forEach(id=>{const g=allGames[id];if(g&&g.status==='finished')applyMyElo(id,g)});render()});db.ref('users/'+token+'/chats').on('value',snap=>{myInbox=snap.val()||{};renderInbox();updateUnreadBadge()});loadExistingConversations();loadPrefs();render()}
 function setupPresence(){const uref=db.ref('users/'+token);db.ref('.info/connected').on('value',s=>{if(s.val()===true){uref.onDisconnect().update({online:false,inGame:null,lastSeen:0});uref.update({name:name,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP})}});setInterval(()=>{uref.update({online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP})},30000)}
 function setInGame(g){db.ref('users/'+token+'/inGame').set(g||null)}
 function getPlayerActiveGame(ut){for(const id in allGames){const g=allGames[id];if(g.status==='playing'&&(g.white&&g.white.token===ut||g.black&&g.black.token===ut))return id}return null}
@@ -679,7 +750,7 @@ function goToLobby(){updateSpectating(null);setChatGame(null);viewGameId=null;se
 function startClockTick(){if(clockInterval)clearInterval(clockInterval);clockInterval=setInterval(()=>{const g=viewGameId?allGames[viewGameId]:null;if(!g||!g.timeControl||g.status!=='playing')return;const t=getCurrentTimes(g);const we=$('clockW'),be=$('clockB');if(we)we.textContent=fmtClock(t.w);if(be)be.textContent=fmtClock(t.b);if(we){we.classList.toggle('running',g.turn==='w');we.classList.toggle('low',t.w<30)}if(be){be.classList.toggle('running',g.turn==='b');be.classList.toggle('low',t.b<30)}if(t.w<=0)flagTime('w');if(t.b<=0)flagTime('b')},200)}
 function fmtClock(s){if(s==null)return'';s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function render(){const elo=getMyElo();if(!firebaseUsersLoaded){$('myslot').innerHTML=name?'Signed in as <b>'+escapeHtml(name)+'</b><br>ELO <span class="elo-spinner"></span>':''}else{$('myslot').innerHTML=name?'Signed in as <b>'+escapeHtml(name)+'</b><br>ELO <b>'+elo+'</b>':''}if(!name){show('lobby');return}if($('practiceElo')){if(!firebaseUsersLoaded)$('practiceElo').innerHTML='<span class="elo-spinner"></span>';else $('practiceElo').textContent=elo}const ag=viewGameId?allGames[viewGameId]:null;if(ag){if(currentViewId!==viewGameId){currentViewId=viewGameId;viewReviewIndex=null;mobilePanelsInit=false}renderGame(viewGameId,ag);show('gameScreen');startClockTick();return}setChatGame(null);renderLobby();show('lobby');if(clockInterval){clearInterval(clockInterval);clockInterval=null}}
-function renderLobby(){renderPlayersList();renderOnlinePlayers();renderGameList();renderPracticeTab();renderLegendaryGames(legendaryCategory)}
+function renderLobby(){renderPlayersList();renderOnlinePlayers();renderGameList();renderPracticeTab();renderLegendaryGames(legendaryCategory);updateOnlineBadge()}
 function renderPracticeTab(){const ex=findPracticeGame();const ra=$('resumePracticeArea'),rb=$('resumePracticeBtn'),pb=$('practiceBtn');if(ex){if(ra)ra.style.display='block';if(rb)rb.onclick=()=>goToGame(ex);if(pb){pb.textContent='⚠️ Abandon & Start New';pb.classList.remove('primary');pb.classList.add('danger')}}else{if(ra)ra.style.display='none';if(pb){pb.textContent='Start New Practice';pb.classList.add('primary');pb.classList.remove('danger')}}}
 function buildPlayerRow(u,i,showMedal){const isMe=u.token===token;const on=isOnline(u);const agi=getPlayerActiveGame(u.token);const medal=showMedal?(i===0?'🥇':i===1?'🥈':i===2?'🥉':'<span style="color:var(--dim)">#'+(i+1)+'</span>'):('<span class="onlinedot '+(on?'on':'off')+'" style="margin:0"></span>');const div=document.createElement('div');div.className='item';let ah='';if(isMe)ah='<span class="badge me">YOU</span>';else if(u.status==='blocked')ah='<span class="badge blocked">BLOCKED</span>';else if(agi&&on)ah='<button class="btn sm" data-act="watch" data-gid="'+agi+'">👁 Watch</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';else if(on)ah='<button class="btn sm primary" data-act="challenge" data-token="'+u.token+'">Challenge</button> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';else ah='<span class="badge">offline</span> <button class="btn sm" data-act="pm" data-token="'+u.token+'">✉</button>';div.innerHTML='<div style="font-size:18px;width:30px;text-align:center">'+medal+'</div><div class="grow"><div class="nm" data-act="profile" data-token="'+u.token+'" style="cursor:pointer"><span class="onlinedot '+(on?'on':'off')+'"></span>'+escapeHtml(u.name||'Player')+'</div><div class="sub">ELO '+(u.elo||900)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center;">'+ah+'</div>';const pb2=div.querySelector('[data-act=profile]');if(pb2)pb2.onclick=()=>openProfile(u.token);const wb=div.querySelector('[data-act=watch]');if(wb)wb.onclick=()=>goToGame(agi);const cb=div.querySelector('[data-act=challenge]');if(cb)cb.onclick=()=>openChallengeModal(u.token,u.name);const pm=div.querySelector('[data-act=pm]');if(pm)pm.onclick=()=>{document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('on'));document.querySelector('[data-tab="messages"]').classList.add('on');document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));$('tab-messages').classList.remove('hidden');openChat(u.token)};return div}
 function renderPlayersList(){const list=$('playersList');list.innerHTML='';const ua=Object.keys(allUsers).map(t=>({token:t,...allUsers[t]})).filter(u=>u.name&&u.status!=='pending');ua.sort((a,b)=>(b.elo||900)-(a.elo||900));if(!ua.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No players yet.</p>';return}ua.forEach((u,i)=>{list.appendChild(buildPlayerRow(u,i,true))})}
