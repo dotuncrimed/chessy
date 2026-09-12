@@ -224,7 +224,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .board-notify.yourturn{color:#7fd6a0;text-shadow:0 0 30px #7fd6a0,0 0 60px #7fd6a088}
 .board-notify.resign{color:#f0908c;text-shadow:0 0 30px #e05252,0 0 60px #e0525288}
 .board-notify.start{color:#f2d189;text-shadow:0 0 30px #e0b458,0 0 60px #e0b45888}
-/* ===== SETTINGS MODAL ===== */
+/* ===== SETTINGS ===== */
 .settings-overlay{position:fixed;inset:0;z-index:180;background:rgba(5,10,7,.85);display:grid;place-items:center;padding:16px}
 .settings-box{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--gold);border-radius:14px;padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;position:relative}
 .settings-box h2{font:400 22px Marcellus,serif;color:var(--gold);margin-bottom:16px;text-align:center}
@@ -270,12 +270,11 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 #board.themed .dot{background:rgba(0,0,0,.35)}
 #board.themed .sq.dark .dot{background:rgba(255,255,255,.4)}
 /* ===== PIECE STYLES ===== */
+.piece-svg{position:relative;z-index:1;width:80%;height:80%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.cap-piece-svg{vertical-align:middle;margin-left:2px}
 .piece-style-emoji .piece{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
-.piece-style-emoji .wp{color:inherit;text-shadow:none}
-.piece-style-emoji .bp{color:inherit;text-shadow:none}
-.piece-style-svg .piece{font-family:Georgia,'Times New Roman',serif;font-weight:400}
-.piece-style-svg .wp{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7),0 0 1px #000}
-.piece-style-svg .bp{color:#1a1a1a;text-shadow:0 1px 2px rgba(255,255,255,.3)}
+.piece-style-emoji .wp{filter:brightness(1.15) saturate(1.3) drop-shadow(0 1px 3px rgba(255,255,255,0.6))}
+.piece-style-emoji .bp{filter:brightness(0.55) saturate(0.7) drop-shadow(0 1px 3px rgba(0,0,0,0.8))}
 /* ===== MOBILE ===== */
 @media(max-width:768px){
   :root{--bw:min(98vw,70dvh,600px)}
@@ -355,38 +354,26 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 
 <div class="admin-overlay hidden" id="adminOverlay">
   <div class="admin-panel">
-    <div class="admin-header">
-      <h2>⚙️ Admin Panel</h2>
-      <button class="btn sm danger" onclick="closeAdminPanel()">✕ Close</button>
-    </div>
+    <div class="admin-header"><h2>⚙️ Admin Panel</h2><button class="btn sm danger" onclick="closeAdminPanel()">✕ Close</button></div>
     <div class="admin-body">
-      <div class="admin-section">
-        <h3>📋 Registration Settings</h3>
+      <div class="admin-section"><h3>📋 Registration Settings</h3>
         <div class="reg-mode-group" id="regModeGroup">
           <label class="reg-mode-option" onclick="setRegistrationMode('open')"><input type="radio" name="regMode" value="open"><div><div class="reg-label">Open Registration</div><div class="reg-desc">Anyone can register and play immediately</div></div></label>
           <label class="reg-mode-option" onclick="setRegistrationMode('approval')"><input type="radio" name="regMode" value="approval"><div><div class="reg-label">Require Approval</div><div class="reg-desc">New accounts need admin approval before playing</div></div></label>
           <label class="reg-mode-option" onclick="setRegistrationMode('closed')"><input type="radio" name="regMode" value="closed"><div><div class="reg-label">Registration Closed</div><div class="reg-desc">No new accounts can be created</div></div></label>
         </div>
       </div>
-      <div class="admin-section" id="pendingSection">
-        <h3>⏳ Pending Registrations (<span id="pendingCount">0</span>)</h3>
-        <div id="pendingList"></div>
-      </div>
-      <div class="admin-section">
-        <h3>👥 User Management</h3>
-        <div id="adminUserList"></div>
-      </div>
+      <div class="admin-section" id="pendingSection"><h3>⏳ Pending Registrations (<span id="pendingCount">0</span>)</h3><div id="pendingList"></div></div>
+      <div class="admin-section"><h3>👥 User Management</h3><div id="adminUserList"></div></div>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS MODAL -->
 <div class="settings-overlay hidden" id="settingsOverlay">
   <div class="settings-box">
     <button class="settings-close" onclick="closeSettings()">✕</button>
     <h2>⚙️ Settings</h2>
-    <div class="settings-section">
-      <h3>🎨 Board Theme</h3>
+    <div class="settings-section"><h3>🎨 Board Theme</h3>
       <div class="theme-grid" id="themeGrid">
         <div><div class="theme-swatch" data-theme="classic" onclick="setBoardTheme('classic')"><div class="sw-a" style="background:#f0e2bf"></div><div class="sw-b" style="background:#648358"></div><div class="sw-c" style="background:#648358"></div><div class="sw-d" style="background:#f0e2bf"></div></div><div class="theme-name">Classic</div></div>
         <div><div class="theme-swatch" data-theme="blue" onclick="setBoardTheme('blue')"><div class="sw-a" style="background:#dee3e6"></div><div class="sw-b" style="background:#8ca2ad"></div><div class="sw-c" style="background:#8ca2ad"></div><div class="sw-d" style="background:#dee3e6"></div></div><div class="theme-name">Blue</div></div>
@@ -395,25 +382,16 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
         <div><div class="theme-swatch" data-theme="pink" onclick="setBoardTheme('pink')"><div class="sw-a" style="background:#f5d5d5"></div><div class="sw-b" style="background:#c77b7b"></div><div class="sw-c" style="background:#c77b7b"></div><div class="sw-d" style="background:#f5d5d5"></div></div><div class="theme-name">Pink</div></div>
       </div>
     </div>
-    <div class="settings-section">
-      <h3>♟️ Piece Style</h3>
+    <div class="settings-section"><h3>♟️ Piece Style</h3>
       <div class="piece-grid" id="pieceGrid">
         <div class="piece-option" data-style="unicode" onclick="setPieceStyle('unicode')"><div class="piece-preview sym">♚♛♜</div><div class="piece-label">Unicode</div></div>
-        <div class="piece-option" data-style="emoji" onclick="setPieceStyle('emoji')"><div class="piece-preview">👑👸🏰</div><div class="piece-label">Emoji</div></div>
-        <div class="piece-option" data-style="svg" onclick="setPieceStyle('svg')"><div class="piece-preview" style="font-family:Georgia,serif">♚♛♜</div><div class="piece-label">Classic SVG</div></div>
+        <div class="piece-option" data-style="emoji" onclick="setPieceStyle('emoji')"><div class="piece-preview" style="filter:brightness(1.1) saturate(1.2)">👑👸🏰</div><div class="piece-label">Emoji</div></div>
+        <div class="piece-option" data-style="svg" onclick="setPieceStyle('svg')"><div class="piece-preview"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/1/1f/Chess_qlt45.svg" style="width:24px;height:24px;vertical-align:middle"><img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" style="width:24px;height:24px;vertical-align:middle"></div><div class="piece-label">Classic SVG</div></div>
       </div>
     </div>
-    <div class="settings-section">
-      <h3>🔊 Sound Effects</h3>
-      <div class="sound-row">
-        <span style="font:600 12px Manrope;color:var(--ink)">Sound</span>
-        <div class="sound-toggle" id="soundToggle" onclick="toggleSound()"><div class="toggle-knob"></div></div>
-      </div>
-      <div class="sound-row">
-        <span style="font:600 12px Manrope;color:var(--ink)">Volume</span>
-        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)">
-        <span class="volume-label" id="volumeLabel">70%</span>
-      </div>
+    <div class="settings-section"><h3>🔊 Sound Effects</h3>
+      <div class="sound-row"><span style="font:600 12px Manrope;color:var(--ink)">Sound</span><div class="sound-toggle" id="soundToggle" onclick="toggleSound()"><div class="toggle-knob"></div></div></div>
+      <div class="sound-row"><span style="font:600 12px Manrope;color:var(--ink)">Volume</span><input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)"><span class="volume-label" id="volumeLabel">70%</span></div>
     </div>
   </div>
 </div>
@@ -446,17 +424,14 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     </div>
     <div class="tabpane hidden" id="tab-players">
       <div class="card"><h2>🏆 Players</h2>
-        <div class="seg" id="playersSubTab" style="margin-bottom:12px">
-          <button data-st="leaderboard" class="on">🏆 Leaderboard</button>
-          <button data-st="online">🟢 Online</button>
-        </div>
+        <div class="seg" id="playersSubTab" style="margin-bottom:12px"><button data-st="leaderboard" class="on">🏆 Leaderboard</button><button data-st="online">🟢 Online</button></div>
         <div id="leaderboardView"><div class="list" id="playersList"></div></div>
         <div id="onlineView" class="hidden"><div class="list" id="onlinePlayersList"></div></div>
       </div>
     </div>
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard"><h2>🎯 Practice vs Computer</h2>
-        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">Default AI Bot until <b style="color:var(--gold-hi)">1350 ELO</b>. Stockfish unlocks at <b style="color:var(--gold-hi)">1350 ELO</b>. Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.</p>
+        <p style="color:var(--dim);font-size:12px;margin-bottom:10px">AI Depth: <b style="color:var(--gold-hi)">2</b> (≤600) · <b style="color:var(--gold-hi)">3</b> (601–900) · <b style="color:var(--gold-hi)">4</b> (901–1349) · <b style="color:var(--gold-hi)">Stockfish</b> (1350+). Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.</p>
         <div id="resumePracticeArea" style="display:none;margin-bottom:14px;"><button class="btn primary" id="resumePracticeBtn" style="width:100%;background:var(--good);border-color:var(--good);color:#0a1712;font-size:14px;padding:12px;">▶ Resume Active Game</button></div>
         <div class="opt-group"><div class="opt-label">PLAY AS (For New Game)</div><div class="seg" id="practiceColorSeg"><button data-c="w" class="on">White</button><button data-c="b">Black</button></div></div>
         <button class="btn primary" id="practiceBtn" style="width:100%">Start New Practice</button>
@@ -464,11 +439,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     </div>
     <div class="tabpane hidden" id="tab-legendary">
       <div class="card"><h2>🏛️ Legendary Games</h2>
-        <div class="seg" id="legendarySubTab" style="margin-bottom:12px">
-          <button data-st="elo" class="on">👑 Top ELO</button>
-          <button data-st="most">⚔️ Most Moves</button>
-          <button data-st="least">⚡ Least Moves</button>
-        </div>
+        <div class="seg" id="legendarySubTab" style="margin-bottom:12px"><button data-st="elo" class="on">👑 Top ELO</button><button data-st="most">⚔️ Most Moves</button><button data-st="least">⚡ Least Moves</button></div>
         <div class="list" id="legendaryList"></div>
       </div>
     </div>
@@ -520,37 +491,23 @@ const firebaseConfig={apiKey:"AIzaSyDRaNr1_SxzDuoL_GZjawNd1nYhRx7jo54",authDomai
 firebase.initializeApp(firebaseConfig);const db=firebase.database();const auth=firebase.auth();
 function $(id){return document.getElementById(id)}
 
-/* ===== NOTIFICATION SYSTEM ===== */
+/* NOTIFICATIONS */
 let lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null};
 function showBoardNotification(text,colorClass,gameId){const frame=document.querySelector('.frame');if(!frame)return;const existing=frame.querySelector('.board-notify');if(existing)existing.remove();const el=document.createElement('div');el.className='board-notify '+colorClass;el.textContent=text;const g=gameId?allGames[gameId]:(viewGameId?allGames[viewGameId]:null);const isTimed=g&&g.timeControl>0;el.style.setProperty('--notify-duration',isTimed?'0.5s':'1s');frame.appendChild(el);const duration=isTimed?500:1000;setTimeout(()=>{if(el.parentNode)el.remove()},duration+100)}
 
-/* ===== SOUND SYSTEM ===== */
-class SoundManager{
-  constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}
-  init(){if(this.initialized)return;try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.initialized=true}catch(e){}}
-  unlock(){if(!this.ctx)this.init();if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()}
-  playTone(freq,duration,type='sine',vol=0.3){if(!this.enabled||!this.ctx)return;if(this.ctx.state==='suspended')this.ctx.resume();const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.connect(gain);gain.connect(this.ctx.destination);osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(this.volume*vol,this.ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+duration);osc.start();osc.stop(this.ctx.currentTime+duration)}
-  playMove(){this.playTone(600,0.08,'sine',0.2);this.playTone(900,0.06,'sine',0.1)}
-  playCapture(){this.playTone(200,0.15,'triangle',0.4);this.playTone(150,0.2,'sawtooth',0.1)}
-  playCheck(){this.playTone(523,0.15,'sine',0.4);setTimeout(()=>this.playTone(784,0.2,'sine',0.4),120)}
-  playCheckmate(){this.playTone(262,0.3,'sine',0.4);setTimeout(()=>this.playTone(330,0.3,'sine',0.4),200);setTimeout(()=>this.playTone(392,0.4,'sine',0.4),400)}
-  playDraw(){this.playTone(440,0.4,'sine',0.3);setTimeout(()=>this.playTone(440,0.6,'sine',0.2),300)}
-  playTimeout(){this.playTone(200,0.3,'square',0.3);setTimeout(()=>this.playTone(150,0.4,'square',0.3),200)}
-  playYourTurn(){this.playTone(880,0.1,'sine',0.2);setTimeout(()=>this.playTone(1100,0.15,'sine',0.25),100)}
-  playStart(){this.playTone(440,0.1,'sine',0.2);setTimeout(()=>this.playTone(550,0.1,'sine',0.2),100);setTimeout(()=>this.playTone(660,0.15,'sine',0.25),200)}
-  playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}
-}
+/* SOUND */
+class SoundManager{constructor(){this.ctx=null;this.enabled=true;this.volume=0.7;this.initialized=false}init(){if(this.initialized)return;try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.initialized=true}catch(e){}}unlock(){if(!this.ctx)this.init();if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()}playTone(freq,duration,type='sine',vol=0.3){if(!this.enabled||!this.ctx)return;if(this.ctx.state==='suspended')this.ctx.resume();const osc=this.ctx.createOscillator();const gain=this.ctx.createGain();osc.connect(gain);gain.connect(this.ctx.destination);osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(this.volume*vol,this.ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.01,this.ctx.currentTime+duration);osc.start();osc.stop(this.ctx.currentTime+duration)}playMove(){this.playTone(600,0.08,'sine',0.2);this.playTone(900,0.06,'sine',0.1)}playCapture(){this.playTone(200,0.15,'triangle',0.4);this.playTone(150,0.2,'sawtooth',0.1)}playCheck(){this.playTone(523,0.15,'sine',0.4);setTimeout(()=>this.playTone(784,0.2,'sine',0.4),120)}playCheckmate(){this.playTone(262,0.3,'sine',0.4);setTimeout(()=>this.playTone(330,0.3,'sine',0.4),200);setTimeout(()=>this.playTone(392,0.4,'sine',0.4),400)}playDraw(){this.playTone(440,0.4,'sine',0.3);setTimeout(()=>this.playTone(440,0.6,'sine',0.2),300)}playTimeout(){this.playTone(200,0.3,'square',0.3);setTimeout(()=>this.playTone(150,0.4,'square',0.3),200)}playYourTurn(){this.playTone(880,0.1,'sine',0.2);setTimeout(()=>this.playTone(1100,0.15,'sine',0.25),100)}playStart(){this.playTone(440,0.1,'sine',0.2);setTimeout(()=>this.playTone(550,0.1,'sine',0.2),100);setTimeout(()=>this.playTone(660,0.15,'sine',0.25),200)}playResign(){this.playTone(300,0.3,'sine',0.3);setTimeout(()=>this.playTone(200,0.4,'sine',0.3),250)}}
 const soundMgr=new SoundManager();
 document.addEventListener('click',()=>soundMgr.unlock(),{once:true});
 document.addEventListener('touchstart',()=>soundMgr.unlock(),{once:true});
 
-/* ===== SETTINGS SYSTEM ===== */
+/* SETTINGS */
 let userPrefs={boardTheme:'classic',pieceStyle:'unicode',soundEnabled:true,soundVolume:70};
 function openSettings(){$('settingsOverlay').classList.remove('hidden');loadSettingsUI()}
 function closeSettings(){$('settingsOverlay').classList.add('hidden')}
-function loadSettingsUI(){document.querySelectorAll('.theme-swatch').forEach(el=>{el.classList.toggle('selected',el.dataset.theme===userPrefs.boardTheme)});document.querySelectorAll('.piece-option').forEach(el=>{el.classList.toggle('selected',el.dataset.style===userPrefs.pieceStyle)});const toggle=$('soundToggle');toggle.classList.toggle('on',userPrefs.soundEnabled);$('volumeSlider').value=userPrefs.soundVolume;$('volumeLabel').textContent=userPrefs.soundVolume+'%'}
+function loadSettingsUI(){document.querySelectorAll('.theme-swatch').forEach(el=>{el.classList.toggle('selected',el.dataset.theme===userPrefs.boardTheme)});document.querySelectorAll('.piece-option').forEach(el=>{el.classList.toggle('selected',el.dataset.style===userPrefs.pieceStyle)});$('soundToggle').classList.toggle('on',userPrefs.soundEnabled);$('volumeSlider').value=userPrefs.soundVolume;$('volumeLabel').textContent=userPrefs.soundVolume+'%'}
 function setBoardTheme(theme){userPrefs.boardTheme=theme;applyBoardTheme();savePrefs();loadSettingsUI()}
-function setPieceStyle(style){userPrefs.pieceStyle=style;applyPieceStyle();savePrefs();loadSettingsUI()}
+function setPieceStyle(style){userPrefs.pieceStyle=style;applyPieceStyle();savePrefs();loadSettingsUI();if(viewGameId&&allGames[viewGameId])renderGame(viewGameId,allGames[viewGameId])}
 function toggleSound(){userPrefs.soundEnabled=!userPrefs.soundEnabled;soundMgr.enabled=userPrefs.soundEnabled;savePrefs();loadSettingsUI()}
 function setVolume(val){userPrefs.soundVolume=parseInt(val);soundMgr.volume=userPrefs.soundVolume/100;$('volumeLabel').textContent=val+'%';savePrefs()}
 function applyBoardTheme(){const frame=document.querySelector('.frame');const board=$('board');if(!frame||!board)return;frame.classList.remove('board-theme-blue','board-theme-green','board-theme-dark','board-theme-pink','themed');board.classList.remove('themed');if(userPrefs.boardTheme!=='classic'){frame.classList.add('board-theme-'+userPrefs.boardTheme,'themed');board.classList.add('themed')}}
@@ -559,12 +516,12 @@ function savePrefs(){if(!token)return;db.ref('users/'+token+'/preferences').set(
 function loadPrefs(){if(!token)return;db.ref('users/'+token+'/preferences').once('value').then(snap=>{if(snap.exists()){const prefs=snap.val();userPrefs={...userPrefs,...prefs};soundMgr.enabled=userPrefs.soundEnabled;soundMgr.volume=userPrefs.soundVolume/100;applyBoardTheme();applyPieceStyle()}})}
 $('settingsOverlay').addEventListener('click',function(e){if(e.target===this)closeSettings()});
 
-/* ===== PIECE GLYPHS ===== */
+/* PIECE GLYPHS + SVG URLS */
 const FE='\uFE0E';
 const GLYPH_UNICODE={k:'♚'+FE,q:'♛'+FE,r:'♜'+FE,b:'♝'+FE,n:'♞'+FE,p:'♟'+FE};
 const GLYPH_EMOJI={k:'👑',q:'👸',r:'🏰',b:'🧙',n:'🐴',p:'🛡️'};
-const GLYPH_SVG={k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'};
-function getGlyph(t){if(userPrefs.pieceStyle==='emoji')return GLYPH_EMOJI[t];if(userPrefs.pieceStyle==='svg')return GLYPH_SVG[t];return GLYPH_UNICODE[t]}
+const SVG_PIECES={wk:'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg',wq:'https://upload.wikimedia.org/wikipedia/commons/1/1f/Chess_qlt45.svg',wr:'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',wb:'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',wn:'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',wp:'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',bk:'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg',bq:'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',br:'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',bb:'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',bn:'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',bp:'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg'};
+function getGlyph(t){if(userPrefs.pieceStyle==='emoji')return GLYPH_EMOJI[t];return GLYPH_UNICODE[t]}
 
 /* ADMIN */
 const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
@@ -623,12 +580,12 @@ function sfInit(){if(sfWorker)return;if(typeof SF_BASE64==='undefined')return;tr
 function sfOnMsg(line){if(!line)return;if(line==='uciok'){sfWorker.postMessage('isready');return}if(line==='readyok'){sfReady=true;return}if(line.indexOf('bestmove')===0){const parts=line.split(' ');if(sfBestmoveCb){const cb=sfBestmoveCb;sfBestmoveCb=null;cb(parts[1])}}}
 function sfRequestMove(fen,elo,cb){sfInit();if(!sfWorker){cb(null);return}sfBestmoveCb=cb;sfWorker.postMessage('setoption name UCI_LimitStrength value true');sfWorker.postMessage('setoption name UCI_Elo value '+clamp(elo,1350,2850));sfWorker.postMessage('position fen '+fen);sfWorker.postMessage('go movetime 900')}
 
-/* DEFAULT AI */
+/* DEFAULT AI — depth 2/3/4 */
 const AI_PV={p:100,n:320,b:330,r:500,q:900,k:0};
 function evalAI(board,ai){let s=0;for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(!p)continue;let v=AI_PV[p.t]||0;if(p.t!=='r'&&p.t!=='k'){const cd=Math.max(Math.abs(r-3.5),Math.abs(c-3.5));if(cd<=1.5)v+=4;if(cd<=0.5)v+=6}if(p.t==='p')v+=(p.c==='w'?(6-r):(r-1));s+=(p.c==='w'?v:-v)}return ai==='w'?s:-s}
 function movOrd(st,m){const p=st.board[m.fr][m.fc],t=st.board[m.tr][m.tc];let s=0;if(t&&p)s+=10*(AI_PV[t.t]||0)-(AI_PV[p.t]||0);if(m.ep)s+=100;if(m.promo)s+=AI_PV[m.promo]||800;if(m.castle)s+=50;return s}
 function aiSrch(st,d,a,b,ai){const lg=legalMoves(st);if(lg.length===0){const k=findKing(st.board,st.turn);if(isAttacked(st.board,k[0],k[1],opp(st.turn)))return st.turn===ai?-100000-d:100000+d;return 0}if(d<=0)return evalAI(st.board,ai);lg.sort((x,y)=>movOrd(st,y)-movOrd(st,x));if(st.turn===ai){let best=-Infinity;for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v>best)best=v;if(best>a)a=best;if(b<=a)break}return best}else{let best=Infinity;for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v<best)best=v;if(best<b)b=best;if(b<=a)break}return best}}
-function getDefaultAIMove(st,ai,elo){const lg=legalMoves(st);if(!lg.length)return null;let d=1;if(elo>=901&&elo<=1349)d=3;else if(elo>=601&&elo<=900)d=2;let bs=-Infinity,bm=[],al=-Infinity;const ord=lg.slice().sort((a,b)=>movOrd(st,b)-movOrd(st,a));for(const m of ord){const u=makeM(st,m);const sc=aiSrch(st,d-1,al,Infinity,ai);unmakeM(st,m,u);if(sc>bs){bs=sc;bm=[m]}else if(sc>=bs-10)bm.push(m);if(sc>al)al=sc}return bm[Math.floor(Math.random()*bm.length)]||lg[0]}
+function getDefaultAIMove(st,ai,elo){const lg=legalMoves(st);if(!lg.length)return null;let d=2;if(elo>=901&&elo<=1349)d=4;else if(elo>=601&&elo<=900)d=3;let bs=-Infinity,bm=[],al=-Infinity;const ord=lg.slice().sort((a,b)=>movOrd(st,b)-movOrd(st,a));for(const m of ord){const u=makeM(st,m);const sc=aiSrch(st,d-1,al,Infinity,ai);unmakeM(st,m,u);if(sc>bs){bs=sc;bm=[m]}else if(sc>=bs-10)bm.push(m);if(sc>al)al=sc}return bm[Math.floor(Math.random()*bm.length)]||lg[0]}
 function getFallbackMove(st){const lg=legalMoves(st);if(!lg.length)return null;for(const m of lg){const u=makeM(st,m);const e=detectEnd(st);unmakeM(st,m,u);if(e&&e.indexOf('wins by checkmate')!==-1)return m}const caps=lg.filter(m=>st.board[m.tr][m.tc]||m.ep);if(caps.length)return caps[Math.floor(Math.random()*caps.length)];return lg[Math.floor(Math.random()*lg.length)]}
 
 /* GLOBAL STATE */
@@ -715,15 +672,15 @@ function renderPlayersList(){const list=$('playersList');list.innerHTML='';const
 function renderOnlinePlayers(){const list=$('onlinePlayersList');list.innerHTML='';const ua=Object.keys(allUsers).map(t=>({token:t,...allUsers[t]})).filter(u=>u.name&&u.status!=='pending'&&isOnline(u));ua.sort((a,b)=>(b.elo||900)-(a.elo||900));if(!ua.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No players online right now.</p>';return}ua.forEach((u,i)=>{list.appendChild(buildPlayerRow(u,i,false))})}
 function renderLegendaryGames(category){legendaryCategory=category;document.querySelectorAll('#legendarySubTab button').forEach(b=>b.classList.toggle('on',b.dataset.st===category));const list=$('legendaryList');list.innerHTML='';const games=Object.keys(allGames).filter(id=>{const g=allGames[id];if(!g||g.vsAI||g.status!=='finished')return false;if(!g.white||!g.black)return false;if(!g.moves||!g.moves.length)return false;if(g.result&&(g.result.indexOf('abandoned')>=0||g.result.indexOf('0-0')>=0))return false;if(category==='least'&&g.moves.length<4)return false;return true}).map(id=>{const g=allGames[id];const we=(allUsers[g.white.token]&&allUsers[g.white.token].elo)||900;const be=(allUsers[g.black.token]&&allUsers[g.black.token].elo)||900;let metric;if(category==='elo')metric=we+be;else metric=g.moves.length;return{id,g,we,be,metric}});if(category==='least')games.sort((a,b)=>a.metric-b.metric);else games.sort((a,b)=>b.metric-a.metric);const top=games.slice(0,3);if(!top.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No legendary games yet.</p>';return}const medals=['🥇','🥈','🥉'];top.forEach((entry,i)=>{const div=document.createElement('div');div.className='legend-item';const wn=escapeHtml(entry.g.white.name||'Player');const bn=escapeHtml(entry.g.black.name||'Player');let metricHtml;if(category==='elo')metricHtml='👑 Combined ELO: <b>'+entry.metric+'</b> ('+entry.we+' + '+entry.be+')';else if(category==='most')metricHtml='⚔️ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';else metricHtml='⚡ <b>'+Math.ceil(entry.metric/2)+'</b> moves ('+entry.metric+' plies)';div.innerHTML='<div class="legend-rank">'+medals[i]+'</div><div class="legend-main"><div class="legend-players">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="legend-metric">'+metricHtml+'</div><div class="legend-result">'+escapeHtml(entry.g.result||'finished')+'</div></div>';const wb=document.createElement('button');wb.className='btn sm';wb.textContent='👁 Watch';wb.onclick=()=>goToGame(entry.id);div.appendChild(wb);list.appendChild(div)})}
 function renderGameList(){const gl=$('gameList');gl.innerHTML='';const gids=Object.keys(allGames).filter(id=>{const g=allGames[id];if(!g||g.vsAI)return false;if(g.status==='finished'||g.status==='closed')return false;if(g.challengedToken&&g.challengedToken!==token)return false;if(g.status==='waiting'){const o=g.white||g.black;if(o&&allUsers[o.token]&&!isOnline(allUsers[o.token]))return false}return true}).sort((a,b)=>(allGames[b].createdAt||0)-(allGames[a].createdAt||0));if(!gids.length){gl.innerHTML='<p style="color:var(--dim);font-size:12px">No open games yet.</p>';return}gids.forEach(id=>{const g=allGames[id];const div=document.createElement('div');div.className='item';const iam=(g.white&&g.white.token===token)||(g.black&&g.black.token===token);const wn=g.white?escapeHtml(g.white.name||'Player'):'—';const bn=g.black?escapeHtml(g.black.name||'Player'):'Waiting…';let badge='';if(g.status==='waiting')badge='<span class="badge wait">waiting</span>';if(g.status==='playing')badge='<span class="badge play">playing</span>';if(g.timeControl)badge+=' <span class="badge">'+Math.round(g.timeControl/60)+'min</span>';div.innerHTML='<div class="grow"><div class="nm" style="cursor:default">'+wn+' <span style="color:var(--dim)">vs</span> '+bn+'</div><div class="sub">'+(g.moves?g.moves.length:0)+' moves</div></div>'+badge;if(iam){if(g.status==='waiting'){const cb=document.createElement('button');cb.className='btn sm danger';cb.textContent='Cancel';cb.onclick=()=>cancelGame(id);div.appendChild(cb)}else{const cb=document.createElement('button');cb.className='btn sm primary';cb.textContent='Continue';cb.onclick=()=>goToGame(id);div.appendChild(cb)}}else{if(g.status==='waiting'){const jb=document.createElement('button');jb.className='btn sm primary';jb.textContent='Join';jb.onclick=()=>joinGame(id);div.appendChild(jb)}else if(g.status==='playing'){const wb=document.createElement('button');wb.className='btn sm';wb.textContent='Watch';wb.onclick=()=>goToGame(id);div.appendChild(wb)}}gl.appendChild(div)})}
-function setPlaque(el,color,pn,isTurn,caps,matAdv,clockId,tv,tr,tl){let ch='';caps.forEach(p=>{ch+='<span class="cap-piece sym '+(p.c==='w'?'wp':'bp')+'">'+getGlyph(p.t)+'</span>'});let ah='';if(matAdv>0)ah='<span class="mat-adv">+'+matAdv+'</span>';let cl='';if(clockId)cl='<div class="clock'+(tr?' running':'')+(tl?' low':'')+'" id="'+clockId+'">'+fmtClock(tv)+'</div>';el.innerHTML='<div class="plaque-left"><div class="pname">'+pn+'</div><div class="psub">'+(color==='w'?'White':'Black')+'</div></div><div class="plaque-right"><div class="caps-row">'+ch+ah+'</div>'+cl+(isTurn?'<div class="turn-dot"></div>':'')+'</div>';el.classList.toggle('active',isTurn)}
+function setPlaque(el,color,pn,isTurn,caps,matAdv,clockId,tv,tr,tl){let ch='';caps.forEach(p=>{if(userPrefs.pieceStyle==='svg'){ch+='<img src="'+SVG_PIECES[p.c+p.t]+'" class="cap-piece-svg" style="width:16px;height:16px">'}else{ch+='<span class="cap-piece sym '+(p.c==='w'?'wp':'bp')+'">'+getGlyph(p.t)+'</span>'}});let ah='';if(matAdv>0)ah='<span class="mat-adv">+'+matAdv+'</span>';let cl='';if(clockId)cl='<div class="clock'+(tr?' running':'')+(tl?' low':'')+'" id="'+clockId+'">'+fmtClock(tv)+'</div>';el.innerHTML='<div class="plaque-left"><div class="pname">'+pn+'</div><div class="psub">'+(color==='w'?'White':'Black')+'</div></div><div class="plaque-right"><div class="caps-row">'+ch+ah+'</div>'+cl+(isTurn?'<div class="turn-dot"></div>':'')+'</div>';el.classList.toggle('active',isTurn)}
 function renderReviewControls(g){const rc=$('reviewControls');if(!rc)return;const fens=g.fens||[g.fen];const tm=(g.moves||[]).length;let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));rc.innerHTML='<button class="btn sm" id="rvFirst">⏮</button><button class="btn sm" id="rvPrev">◀</button><span style="color:var(--dim);font:600 12px \'IBM Plex Mono\',monospace;min-width:90px;text-align:center">Move '+ci+' / '+tm+'</span><button class="btn sm" id="rvNext">▶</button><button class="btn sm" id="rvLast">⏭</button>';$('rvFirst').onclick=()=>{viewReviewIndex=0;render()};$('rvPrev').onclick=()=>{viewReviewIndex=Math.max(0,ci-1);render()};$('rvNext').onclick=()=>{viewReviewIndex=Math.min(tm,ci+1);render()};$('rvLast').onclick=()=>{viewReviewIndex=null;render()};$('rvPrev').disabled=(ci<=0);$('rvFirst').disabled=(ci<=0);$('rvNext').disabled=(ci>=tm);$('rvLast').disabled=(ci>=tm)}
 function renderGame(id,g){updateSpectating(id);const myColor=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;const isSpec=!myColor;const orient=myColor==='b'?'b':'w';const fens=g.fens||[g.fen];let ci=(viewReviewIndex==null)?fens.length-1:viewReviewIndex;ci=Math.max(0,Math.min(ci,fens.length-1));const df=fens[ci];const st=fromFEN(df);const atL=(ci>=fens.length-1);const canM=atL&&g.status==='playing'&&myColor&&g.turn===myColor;const{capW,capB}=getCaptured(st.board);const md=getMaterialAdvantage(st.board);const tc=orient==='w'?'b':'w';const bc=orient==='w'?'w':'b';const tn=tc==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));const bn=bc==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));const tm2=tc==='w'?md:-md;const bm=bc==='w'?md:-md;const times=getCurrentTimes(g);const hc=!!g.timeControl;setPlaque($('topPlaque'),tc,tn,atL&&g.status==='playing'&&g.turn===tc,tc==='w'?capW:capB,tm2>0?tm2:0,hc?('clock'+tc.toUpperCase()):null,hc?(tc==='w'?times.w:times.b):null,hc&&g.status==='playing'&&g.turn===tc,hc&&(tc==='w'?times.w:times.b)<30);setPlaque($('botPlaque'),bc,bn,atL&&g.status==='playing'&&g.turn===bc,bc==='w'?capW:capB,bm>0?bm:0,hc?('clock'+bc.toUpperCase()):null,hc?(bc==='w'?times.w:times.b):null,hc&&g.status==='playing'&&g.turn===bc,hc&&(bc==='w'?times.w:times.b)<30);const ab=$('gameActionBar');ab.innerHTML='';const lobbyBtn=document.createElement('button');lobbyBtn.className='btn sm';lobbyBtn.textContent='← Lobby';lobbyBtn.onclick=()=>goToLobby();ab.appendChild(lobbyBtn);if(myColor&&g.status==='waiting'){const cb=document.createElement('button');cb.className='btn sm danger';cb.textContent='Cancel Game';cb.onclick=()=>cancelGame(id);ab.appendChild(cb)}if(myColor&&g.status==='playing'&&atL){const rb=document.createElement('button');rb.className='btn sm danger';rb.textContent='Resign';rb.onclick=resign;ab.appendChild(rb);if(!g.drawOffer&&!g.vsAI){const dbtn=document.createElement('button');dbtn.className='btn sm';dbtn.textContent='Offer Draw';dbtn.onclick=offerDraw;ab.appendChild(dbtn)}}if(g.status==='finished'){const nb=document.createElement('button');nb.className='btn sm primary';nb.textContent='New Game';nb.onclick=()=>goToLobby();ab.appendChild(nb)}renderBoard(st,orient,canM,g.lastMove);applyBoardTheme();applyPieceStyle();const canReview=isSpec||g.status==='finished';if(canReview)renderReviewControls(g);else $('reviewControls').innerHTML='';const sb=$('statusBanner');sb.className='status-banner';if(g.status==='finished'){sb.classList.add(g.result&&g.result.startsWith('½')?'draw':'win');sb.textContent='Game over — '+g.result}else if(!atL)sb.textContent='Reviewing move '+ci+' of '+(g.moves?g.moves.length:0);else if(canM){sb.classList.add('turn');sb.textContent='YOUR TURN ('+(myColor==='w'?'White':'Black')+')'}else if(g.status==='playing'){const tn2=g.turn==='w'?(g.white?escapeHtml(g.white.name||'Player'):(g.vsAI?'🤖 CPU':'—')):(g.black?escapeHtml(g.black.name||'Player'):(g.vsAI?'🤖 CPU':'—'));if(g.vsAI){const ee=g.playerElo||getMyElo()||900;sb.textContent='Computer is thinking… ('+(ee>=1350?'Stockfish':'Default Bot')+')'}else sb.textContent='Waiting for '+tn2+' to move…'}else sb.textContent='Waiting for an opponent to join…';
   const currentGameId=id;if(canM&&lastNotifyState.lastGameId===currentGameId&&!lastNotifyState.wasMyTurn){showBoardNotification('YOUR TURN','yourturn',currentGameId);soundMgr.playYourTurn()}if(g.drawOffer&&g.drawOffer!==token&&myColor&&lastNotifyState.lastGameId===currentGameId){if(!lastNotifyState.lastDrawOffer||lastNotifyState.lastDrawOffer!==g.drawOffer){showBoardNotification('DRAW OFFER','drawoffer',currentGameId)}}if(lastNotifyState.lastGameId!==currentGameId&&g.status==='playing'&&g.moves&&g.moves.length===0){showBoardNotification('GAME START','start',currentGameId);soundMgr.playStart()}lastNotifyState={wasMyTurn:canM,lastGameId:currentGameId,lastFen:g.fen,lastDrawOffer:g.drawOffer||null};
   $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';const specs=g.spectators||{};let sh='';let sc=0;for(const tk in specs){if(specs[tk]){sh+='<div class="spec-item">'+((tk===token)?escapeHtml(specs[tk])+' (You)':escapeHtml(specs[tk]))+'</div>';sc++}}if(!sc)sh='<div style="color:var(--dim);font-size:12px">No spectators yet</div>';$('spectatorList').innerHTML=sh;const db2=$('drawOfferBar');db2.innerHTML='';if(g.status==='playing'&&g.drawOffer&&g.drawOffer!==token&&myColor&&!g.vsAI){const other=g.drawOffer===((g.white&&g.white.token)||'')?tn:bn;db2.innerHTML='<div class="drawbar"><span style="flex:1">'+other+' offers a draw</span><button class="btn sm primary" onclick="respondDraw(true)">Accept</button><button class="btn sm" onclick="respondDraw(false)">Decline</button></div>'}const ml=$('moveLog');ml.innerHTML='';const moves=g.moves||[];for(let i=0;i<moves.length;i+=2){const row=document.createElement('div');row.className='mv-row';row.innerHTML='<span class="num">'+((i/2)+1)+'.</span><span class="'+(i===moves.length-1?'cur':'')+'">'+(moves[i]||'')+'</span><span class="'+((i+1)===moves.length-1?'cur':'')+'">'+(moves[i+1]||'')+'</span>';if(canReview){((idx)=>{row.onclick=()=>{viewReviewIndex=idx;render()}})(i)}ml.appendChild(row)}ml.scrollTop=ml.scrollHeight;setBadge($('specBadge'),sc);setBadge($('movesBadge'),moves.length);if(!mobilePanelsInit&&window.innerWidth<=768){['specPanel','chatPanel','movesPanel'].forEach(pid=>{const p=$(pid);if(p)p.classList.add('closed')});mobilePanelsInit=true}}
-function renderBoard(st,orient,canM,lastM){const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){const r=orient==='w'?dr:7-dr,c=orient==='w'?dc:7-dc;const sq=document.createElement('div');sq.className='sq '+(((r+c)%2===0)?'light':'dark');if(lastM&&((lastM.fr===r&&lastM.fc===c)||(lastM.tr===r&&lastM.tc===c)))sq.classList.add('last');if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');if(inC&&k[0]===r&&k[1]===c)sq.classList.add('check');const p=b[r][c];if(p){const sp=document.createElement('span');sp.className='piece sym '+(p.c==='w'?'wp':'bp');sp.textContent=getGlyph(p.t);sq.appendChild(sp)}if(canM){if(p&&p.c===st.turn)sq.classList.add('has');if(selMoves){const hit=selMoves.find(m=>m.tr===r&&m.tc===c);if(hit){sq.classList.add('can');const d=document.createElement('div');d.className=(b[r][c]||hit.ep)?'cap-ring':'dot';sq.appendChild(d)}}}if(dc===0){const l=document.createElement('i');l.className='coord rank';l.textContent=8-r;sq.appendChild(l)}if(dr===7){const l=document.createElement('i');l.className='coord file';l.textContent=FILES[c];sq.appendChild(l)}if(canM)sq.addEventListener('click',((rr,cc)=>()=>onSquareClick(st,rr,cc))(r,c));el.appendChild(sq)}}
+function renderBoard(st,orient,canM,lastM){const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){const r=orient==='w'?dr:7-dr,c=orient==='w'?dc:7-dc;const sq=document.createElement('div');sq.className='sq '+(((r+c)%2===0)?'light':'dark');if(lastM&&((lastM.fr===r&&lastM.fc===c)||(lastM.tr===r&&lastM.tc===c)))sq.classList.add('last');if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');if(inC&&k[0]===r&&k[1]===c)sq.classList.add('check');const p=b[r][c];if(p){if(userPrefs.pieceStyle==='svg'){const img=document.createElement('img');img.src=SVG_PIECES[p.c+p.t];img.className='piece-svg';img.draggable=false;sq.appendChild(img)}else{const sp=document.createElement('span');sp.className='piece sym '+(p.c==='w'?'wp':'bp');sp.textContent=getGlyph(p.t);sq.appendChild(sp)}}if(canM){if(p&&p.c===st.turn)sq.classList.add('has');if(selMoves){const hit=selMoves.find(m=>m.tr===r&&m.tc===c);if(hit){sq.classList.add('can');const d=document.createElement('div');d.className=(b[r][c]||hit.ep)?'cap-ring':'dot';sq.appendChild(d)}}}if(dc===0){const l=document.createElement('i');l.className='coord rank';l.textContent=8-r;sq.appendChild(l)}if(dr===7){const l=document.createElement('i');l.className='coord file';l.textContent=FILES[c];sq.appendChild(l)}if(canM)sq.addEventListener('click',((rr,cc)=>()=>onSquareClick(st,rr,cc))(r,c));el.appendChild(sq)}}
 function onSquareClick(st,r,c){const b=st.board;const p=b[r][c];if(sel&&selMoves){const cands=selMoves.filter(m=>m.tr===r&&m.tc===c);if(cands.length){if(cands[0].promo){openPromo(cands);return}sel=null;selMoves=null;submitMove(cands[0]);return}}if(p&&p.c===st.turn){if(sel&&sel[0]===r&&sel[1]===c){sel=null;selMoves=null}else{sel=[r,c];selMoves=legalMoves(st).filter(m=>m.fr===r&&m.fc===c)}render();return}if(sel){sel=null;selMoves=null;render()}}
 let pendingPromo=null;
-function openPromo(cands){pendingPromo=cands;const box=$('promoPicks');box.innerHTML='';['q','r','b','n'].forEach(t=>{const btn=document.createElement('button');btn.innerHTML='<span class="pg sym wp">'+getGlyph(t)+'</span>';btn.onclick=()=>{const m=pendingPromo.find(x=>x.promo===t);$('promoModal').classList.add('hidden');sel=null;selMoves=null;if(m)submitMove(m)};box.appendChild(btn)});$('promoModal').classList.remove('hidden')}
+function openPromo(cands){pendingPromo=cands;const box=$('promoPicks');box.innerHTML='';['q','r','b','n'].forEach(t=>{const btn=document.createElement('button');if(userPrefs.pieceStyle==='svg'){btn.innerHTML='<img src="'+SVG_PIECES['w'+t]+'" style="width:36px;height:36px">'}else{btn.innerHTML='<span class="pg sym wp">'+getGlyph(t)+'</span>'}btn.onclick=()=>{const m=pendingPromo.find(x=>x.promo===t);$('promoModal').classList.add('hidden');sel=null;selMoves=null;if(m)submitMove(m)};box.appendChild(btn)});$('promoModal').classList.remove('hidden')}
 $('createGameBtn').onclick=createOpenGame;$('practiceBtn').onclick=startPractice;$('profileClose').onclick=()=>$('profileModal').classList.add('hidden');$('backToInbox').onclick=closeChatView;$('pmSendBtn').onclick=sendPM;
 $('pmInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendPM()}});
 $('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendChat()}});
