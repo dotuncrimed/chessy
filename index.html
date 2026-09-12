@@ -185,7 +185,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .auth-submit:hover{background:var(--gold-hi)}
 .auth-submit:disabled{opacity:.5;cursor:not-allowed}
 .auth-crest{width:50px;height:50px;margin:0 auto 12px;border:1px solid rgba(224,180,88,.55);border-radius:50%;display:grid;place-items:center;font-size:26px;color:var(--gold);background:radial-gradient(circle at 35% 30%,rgba(224,180,88,.28),transparent 62%)}
-/* ADMIN PANEL */
 .admin-overlay{position:fixed;inset:0;z-index:150;background:rgba(5,10,7,.92);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
 .admin-panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--gold);border-radius:14px;width:100%;max-width:700px;min-height:80vh}
 .admin-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
@@ -207,7 +206,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .reg-mode-option .reg-desc{font-size:11px;color:var(--dim)}
 </style></head><body>
 
-<!-- AUTH SCREEN -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
     <div class="auth-crest sym">&#x265E;&#xFE0E;</div>
@@ -224,7 +222,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
       <button class="auth-submit" id="loginBtn" onclick="loginUser()">Sign In</button>
     </div>
     <div class="auth-form" id="registerForm">
-      <input type="text" class="auth-input" id="regUsername" placeholder="Choose a username" maxlength="20" autocomplete="username">
+      <input type="text" class="auth-input" id="regUsername" placeholder="Username (for login)" maxlength="20" autocomplete="username">
+      <input type="text" class="auth-input" id="regDisplayName" placeholder="Display Name (shown to players)" maxlength="25">
       <input type="password" class="auth-input" id="regPassword" placeholder="Password (min 6 characters)" autocomplete="new-password">
       <input type="password" class="auth-input" id="regPasswordConfirm" placeholder="Confirm password" autocomplete="new-password">
       <button class="auth-submit" id="regBtn" onclick="registerUser()">Create Account</button>
@@ -232,7 +231,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   </div>
 </div>
 
-<!-- ADMIN PASSWORD MODAL -->
 <div class="modal hidden" id="adminPasswordModal">
   <div class="challenge-box" style="max-width:320px">
     <h3>🔒 Admin Access</h3>
@@ -245,7 +243,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   </div>
 </div>
 
-<!-- ADMIN PANEL -->
 <div class="admin-overlay hidden" id="adminOverlay">
   <div class="admin-panel">
     <div class="admin-header">
@@ -282,7 +279,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
   </div>
 </div>
 
-<!-- MAIN APP -->
 <header class="top">
   <div class="crest sym" id="crestLogo">&#x265E;&#xFE0E;</div>
   <div><h1>Multiplayer Chess</h1><p class="tag">challenge · play · practice · spectate · chat</p></div>
@@ -355,224 +351,57 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 const firebaseConfig={apiKey:"AIzaSyDRaNr1_SxzDuoL_GZjawNd1nYhRx7jo54",authDomain:"cess-28424.firebaseapp.com",databaseURL:"https://cess-28424-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"cess-28424",storageBucket:"cess-28424.firebasestorage.app",messagingSenderId:"881288035008",appId:"1:881288035008:web:e5ba6cb1135487aab0cb25"};
 firebase.initializeApp(firebaseConfig);const db=firebase.database();const auth=firebase.auth();
 
-/* ============================================================
-   ADMIN SYSTEM
-   ============================================================ */
-const ADMIN_PASSWORD='adminpogi';
-let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
-
-$('crestLogo').addEventListener('click',()=>{
-  adminClickCount++;
-  if(adminClickTimer)clearTimeout(adminClickTimer);
-  adminClickTimer=setTimeout(()=>{adminClickCount=0},800);
-  if(adminClickCount>=3){
-    adminClickCount=0;
-    if(!token){alert('Please log in first.');return}
-    $('adminPasswordInput').value='';
-    $('adminPasswordError').textContent='';
-    $('adminPasswordModal').classList.remove('hidden');
-    setTimeout(()=>$('adminPasswordInput').focus(),100);
-  }
-});
+/* ADMIN */
+const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAdminSession=false;
+$('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}$('adminPasswordInput').value='';$('adminPasswordError').textContent='';$('adminPasswordModal').classList.remove('hidden');setTimeout(()=>$('adminPasswordInput').focus(),100)}});
 $('adminPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPassword()});
+function verifyAdminPassword(){if($('adminPasswordInput').value===ADMIN_PASSWORD){isAdminSession=true;$('adminPasswordModal').classList.add('hidden');openAdminPanel()}else{$('adminPasswordError').textContent='Incorrect password.'}}
+function openAdminPanel(){$('adminOverlay').classList.remove('hidden');renderAdminPanel()}
+function closeAdminPanel(){$('adminOverlay').classList.add('hidden');isAdminSession=false}
+function renderAdminPanel(){loadRegistrationSettings();renderPendingUsers();renderAdminUsers()}
+function loadRegistrationSettings(){db.ref('settings/registrationMode').once('value').then(snap=>{const mode=snap.val()||'open';document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})})}
+function setRegistrationMode(mode){db.ref('settings/registrationMode').set(mode);document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})}
+function renderPendingUsers(){const list=$('pendingList');const pending=Object.keys(allUsers).filter(uid=>allUsers[uid].status==='pending');$('pendingCount').textContent=pending.length;if(!pending.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No pending registrations.</p>';return}list.innerHTML='';pending.forEach(uid=>{const u=allUsers[uid];const div=document.createElement('div');div.className='admin-user-item';div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong><span class="admin-user-elo">@'+escapeHtml(u.username||'?')+'</span><span class="badge pending">PENDING</span></div><div class="admin-user-actions"><button class="btn sm primary" onclick="adminApprove(\''+uid+'\')">✓ Approve</button><button class="btn sm danger" onclick="adminDeny(\''+uid+'\')">✕ Deny</button></div>';list.appendChild(div)})}
+function renderAdminUsers(){const list=$('adminUserList');list.innerHTML='';const users=Object.keys(allUsers).sort((a,b)=>(allUsers[b].elo||900)-(allUsers[a].elo||900));if(!users.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No users found.</p>';return}users.forEach(uid=>{const u=allUsers[uid];const status=u.status||'active';const sc=status==='blocked'?'blocked':status==='pending'?'pending':'active';const div=document.createElement('div');div.className='admin-user-item';let acts='<button class="btn sm" onclick="adminEditName(\''+uid+'\')">✏️ Name</button><button class="btn sm" onclick="adminEditElo(\''+uid+'\')">📊 ELO</button>';if(uid!==token){if(status==='blocked')acts+='<button class="btn sm primary" onclick="adminUnblock(\''+uid+'\')">Unblock</button>';else acts+='<button class="btn sm danger" onclick="adminBlock(\''+uid+'\')">Block</button>'}div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong>'+(uid===token?'<span class="badge me">YOU</span>':'')+'<span class="admin-user-elo">@'+escapeHtml(u.username||'?')+' · ELO: '+(u.elo||900)+'</span><span class="badge '+sc+'">'+status.toUpperCase()+'</span></div><div class="admin-user-actions">'+acts+'</div>';list.appendChild(div)})}
+function adminEditName(uid){const cur=allUsers[uid]?allUsers[uid].name:'';const nn=prompt('Enter new DISPLAY NAME for "'+cur+'":',cur);if(nn&&nn.trim()){db.ref('users/'+uid+'/name').set(nn.trim().slice(0,25));setTimeout(renderAdminPanel,500)}}
+function adminEditElo(uid){const cur=allUsers[uid]?allUsers[uid].elo:900;const ne=prompt('Enter new ELO for "'+(allUsers[uid]?allUsers[uid].name:'user')+'":',cur);if(ne!==null&&!isNaN(parseInt(ne))){db.ref('users/'+uid+'/elo').set(clamp(parseInt(ne),100,3200));setTimeout(renderAdminPanel,500)}}
+function adminBlock(uid){if(uid===token){alert('You cannot block yourself.');return}if(confirm('Block "'+(allUsers[uid]?allUsers[uid].name:'this user')+'"?')){db.ref('users/'+uid+'/status').set('blocked');setTimeout(renderAdminPanel,500)}}
+function adminUnblock(uid){db.ref('users/'+uid+'/status').set('active');setTimeout(renderAdminPanel,500)}
+function adminApprove(uid){db.ref('users/'+uid+'/status').set('active');setTimeout(renderAdminPanel,500)}
+function adminDeny(uid){if(confirm('Deny and remove this registration?')){db.ref('users/'+uid).remove();setTimeout(renderAdminPanel,500)}}
 
-function verifyAdminPassword(){
-  const pw=$('adminPasswordInput').value;
-  if(pw===ADMIN_PASSWORD){
-    isAdminSession=true;
-    $('adminPasswordModal').classList.add('hidden');
-    openAdminPanel();
-  }else{
-    $('adminPasswordError').textContent='Incorrect password.';
-  }
-}
-
-function openAdminPanel(){
-  $('adminOverlay').classList.remove('hidden');
-  renderAdminPanel();
-}
-function closeAdminPanel(){
-  $('adminOverlay').classList.add('hidden');
-  isAdminSession=false;
-}
-
-function renderAdminPanel(){
-  loadRegistrationSettings();
-  renderPendingUsers();
-  renderAdminUsers();
-}
-
-function loadRegistrationSettings(){
-  db.ref('settings/registrationMode').once('value').then(snap=>{
-    const mode=snap.val()||'open';
-    document.querySelectorAll('.reg-mode-option').forEach(opt=>{
-      const radio=opt.querySelector('input');
-      const isSelected=radio.value===mode;
-      radio.checked=isSelected;
-      opt.classList.toggle('selected',isSelected);
-    });
-  });
-}
-
-function setRegistrationMode(mode){
-  db.ref('settings/registrationMode').set(mode);
-  document.querySelectorAll('.reg-mode-option').forEach(opt=>{
-    const radio=opt.querySelector('input');
-    const isSelected=radio.value===mode;
-    radio.checked=isSelected;
-    opt.classList.toggle('selected',isSelected);
-  });
-}
-
-function renderPendingUsers(){
-  const list=$('pendingList');
-  const pending=Object.keys(allUsers).filter(uid=>allUsers[uid].status==='pending');
-  $('pendingCount').textContent=pending.length;
-  if(!pending.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No pending registrations.</p>';return}
-  list.innerHTML='';
-  pending.forEach(uid=>{
-    const u=allUsers[uid];
-    const div=document.createElement('div');
-    div.className='admin-user-item';
-    div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong><span class="badge pending">PENDING</span></div><div class="admin-user-actions"><button class="btn sm primary" onclick="adminApprove(\''+uid+'\')">✓ Approve</button><button class="btn sm danger" onclick="adminDeny(\''+uid+'\')">✕ Deny</button></div>';
-    list.appendChild(div);
-  });
-}
-
-function renderAdminUsers(){
-  const list=$('adminUserList');
-  list.innerHTML='';
-  const users=Object.keys(allUsers).sort((a,b)=>(allUsers[b].elo||900)-(allUsers[a].elo||900));
-  if(!users.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No users found.</p>';return}
-  users.forEach(uid=>{
-    const u=allUsers[uid];
-    const status=u.status||'active';
-    const statusClass=status==='blocked'?'blocked':status==='pending'?'pending':'active';
-    const div=document.createElement('div');
-    div.className='admin-user-item';
-    let actions='<button class="btn sm" onclick="adminEditName(\''+uid+'\')">✏️ Name</button>';
-    actions+='<button class="btn sm" onclick="adminEditElo(\''+uid+'\')">📊 ELO</button>';
-    if(uid!==token){
-      if(status==='blocked')actions+='<button class="btn sm primary" onclick="adminUnblock(\''+uid+'\')">Unblock</button>';
-      else actions+='<button class="btn sm danger" onclick="adminBlock(\''+uid+'\')">Block</button>';
-    }
-    div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong>'+(uid===token?'<span class="badge me">YOU</span>':'')+'<span class="admin-user-elo">ELO: '+(u.elo||900)+'</span><span class="badge '+statusClass+'">'+status.toUpperCase()+'</span></div><div class="admin-user-actions">'+actions+'</div>';
-    list.appendChild(div);
-  });
-}
-
-function adminEditName(uid){
-  const current=allUsers[uid]?allUsers[uid].name:'';
-  const newName=prompt('Enter new username for "'+current+'":',current);
-  if(newName&&newName.trim()){
-    db.ref('users/'+uid+'/name').set(newName.trim().slice(0,20));
-    setTimeout(renderAdminPanel,500);
-  }
-}
-function adminEditElo(uid){
-  const current=allUsers[uid]?allUsers[uid].elo:900;
-  const newElo=prompt('Enter new ELO for "'+(allUsers[uid]?allUsers[uid].name:'user')+'":',current);
-  if(newElo!==null&&!isNaN(parseInt(newElo))){
-    db.ref('users/'+uid+'/elo').set(clamp(parseInt(newElo),100,3200));
-    setTimeout(renderAdminPanel,500);
-  }
-}
-function adminBlock(uid){
-  if(uid===token){alert('You cannot block yourself.');return}
-  if(confirm('Block "'+(allUsers[uid]?allUsers[uid].name:'this user')+'"? They will not be able to log in.')){
-    db.ref('users/'+uid+'/status').set('blocked');
-    setTimeout(renderAdminPanel,500);
-  }
-}
-function adminUnblock(uid){
-  db.ref('users/'+uid+'/status').set('active');
-  setTimeout(renderAdminPanel,500);
-}
-function adminApprove(uid){
-  db.ref('users/'+uid+'/status').set('active');
-  setTimeout(renderAdminPanel,500);
-}
-function adminDeny(uid){
-  if(confirm('Deny and remove "'+(allUsers[uid]?allUsers[uid].name:'this user')+'"? They will need to re-register.')){
-    db.ref('users/'+uid).remove();
-    setTimeout(renderAdminPanel,500);
-  }
-}
-
-/* ============================================================
-   AUTH UI — Username-only
-   ============================================================ */
+/* AUTH UI */
 function usernameToEmail(u){return u.toLowerCase().trim()+'@chess.game'}
 function validateUsername(u){if(!u||u.trim().length<3)return 'Username must be at least 3 characters.';if(u.trim().length>20)return 'Username must be 20 characters or less.';if(!/^[a-zA-Z0-9_]+$/.test(u.trim()))return 'Only letters, numbers, and underscores allowed.';return null}
-function switchAuthTab(t){$('authError').textContent='';if(t==='login'){$('tabLogin').classList.add('on');$('tabRegister').classList.remove('on');$('loginForm').classList.add('on');$('registerForm').classList.remove('on')}else{$('tabRegister').classList.add('on');$('tabLogin').classList.remove('on');$('registerForm').classList.add('on');$('loginForm').classList.remove('on')}}
+function switchAuthTab(t){$('authError').textContent='';$('authError').style.color='';if(t==='login'){$('tabLogin').classList.add('on');$('tabRegister').classList.remove('on');$('loginForm').classList.add('on');$('registerForm').classList.remove('on')}else{$('tabRegister').classList.add('on');$('tabLogin').classList.remove('on');$('registerForm').classList.add('on');$('loginForm').classList.remove('on')}}
 function showAuthError(m){$('authError').textContent=m}
 function getAuthErrorMessage(c){const m={'auth/email-already-in-use':'This username is already taken.','auth/invalid-email':'Invalid username.','auth/weak-password':'Password must be at least 6 characters.','auth/user-not-found':'No account found with this username.','auth/wrong-password':'Incorrect password.','auth/invalid-credential':'Invalid username or password.','auth/too-many-requests':'Too many attempts. Please wait.','auth/network-request-failed':'Network error.','auth/missing-password':'Please enter a password.'};return m[c]||'An error occurred. Please try again.'}
-
 function registerUser(){
   const username=$('regUsername').value.trim();
-  const pw=$('regPassword').value;
-  const pw2=$('regPasswordConfirm').value;
-  const ue=validateUsername(username);
-  if(ue){showAuthError(ue);return}
+  const displayName=$('regDisplayName').value.trim();
+  const pw=$('regPassword').value;const pw2=$('regPasswordConfirm').value;
+  const ue=validateUsername(username);if(ue){showAuthError(ue);return}
+  if(!displayName){showAuthError('Please enter a display name.');return}
+  if(displayName.length>25){showAuthError('Display name must be 25 characters or less.');return}
   if(!pw||pw.length<6){showAuthError('Password must be at least 6 characters.');return}
   if(pw!==pw2){showAuthError('Passwords do not match.');return}
   $('regBtn').disabled=true;$('regBtn').textContent='Checking...';
-
-  // Check registration mode first
   db.ref('settings/registrationMode').once('value').then(snap=>{
     const mode=snap.val()||'open';
-    if(mode==='closed'){
-      showAuthError('Registration is currently closed. Please try again later.');
-      $('regBtn').disabled=false;$('regBtn').textContent='Create Account';
-      return;
-    }
+    if(mode==='closed'){showAuthError('Registration is currently closed.');$('regBtn').disabled=false;$('regBtn').textContent='Create Account';return}
     const userStatus=(mode==='approval')?'pending':'active';
     $('regBtn').textContent='Creating...';
     auth.createUserWithEmailAndPassword(usernameToEmail(username),pw)
-      .then(cred=>{
-        return db.ref('users/'+cred.user.uid).set({
-          name:username,elo:900,online:true,status:userStatus,
-          lastSeen:firebase.database.ServerValue.TIMESTAMP
-        });
-      })
-      .then(()=>{
-        if(userStatus==='pending'){
-          auth.signOut();
-          showAuthError('');
-          switchAuthTab('login');
-          $('authError').textContent='Account created! Please wait for admin approval before logging in.';
-          $('authError').style.color='var(--amber)';
-        }
-      })
-      .catch(err=>{
-        showAuthError(getAuthErrorMessage(err.code));
-        $('regBtn').disabled=false;$('regBtn').textContent='Create Account';
-      });
+      .then(cred=>{return db.ref('users/'+cred.user.uid).set({name:displayName,username:username,elo:900,online:true,status:userStatus,lastSeen:firebase.database.ServerValue.TIMESTAMP})})
+      .then(()=>{if(userStatus==='pending'){auth.signOut();showAuthError('');switchAuthTab('login');$('authError').textContent='Account created! Please wait for admin approval.';$('authError').style.color='var(--amber)'}})
+      .catch(err=>{showAuthError(getAuthErrorMessage(err.code));$('regBtn').disabled=false;$('regBtn').textContent='Create Account'});
   });
 }
-
-function loginUser(){
-  const username=$('loginUsername').value.trim();
-  const pw=$('loginPassword').value;
-  if(!username){showAuthError('Please enter your username.');return}
-  if(!pw){showAuthError('Please enter your password.');return}
-  $('loginBtn').disabled=true;$('loginBtn').textContent='Signing in...';
-  auth.signInWithEmailAndPassword(usernameToEmail(username),pw)
-    .then(()=>{showAuthError('');$('authError').style.color='';})
-    .catch(err=>{
-      showAuthError(getAuthErrorMessage(err.code));
-      $('loginBtn').disabled=false;$('loginBtn').textContent='Sign In';
-    });
-}
+function loginUser(){const username=$('loginUsername').value.trim();const pw=$('loginPassword').value;if(!username){showAuthError('Please enter your username.');return}if(!pw){showAuthError('Please enter your password.');return}$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in...';auth.signInWithEmailAndPassword(usernameToEmail(username),pw).then(()=>{showAuthError('')}).catch(err=>{showAuthError(getAuthErrorMessage(err.code));$('loginBtn').disabled=false;$('loginBtn').textContent='Sign In'})}
 function logout(){auth.signOut().then(()=>{location.reload()})}
-document.addEventListener('keydown',function(e){
-  if(e.key!=='Enter')return;
-  if(!$('authOverlay').classList.contains('hidden')){e.preventDefault();if($('loginForm').classList.contains('on'))loginUser();else registerUser()}
-});
+document.addEventListener('keydown',function(e){if(e.key!=='Enter')return;if(!$('authOverlay').classList.contains('hidden')){e.preventDefault();if($('loginForm').classList.contains('on'))loginUser();else registerUser()}});
 
-/* ============================================================
-   CHESS ENGINE
-   ============================================================ */
+/* CHESS ENGINE */
 const FILES='abcdefgh';const FE='\uFE0E';
 const GLYPH={k:'♚'+FE,q:'♛'+FE,r:'♜'+FE,b:'♝'+FE,n:'♞'+FE,p:'♟'+FE};
 const START_FEN='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -622,52 +451,20 @@ function $(id){return document.getElementById(id)}
 function show(s){['lobby','gameScreen'].forEach(x=>$(x).classList.add('hidden'));$(s).classList.remove('hidden')}
 function getMyElo(){if(!firebaseUsersLoaded)return null;if(allUsers[token]&&allUsers[token].elo!==undefined&&allUsers[token].elo!==null)return Number(allUsers[token].elo);return 900}
 
-/* AUTH STATE — checks blocked/pending status */
 auth.onAuthStateChanged(user=>{
-  if(user){
-    token=user.uid;
-    db.ref('users/'+token).once('value').then(snap=>{
-      if(snap.exists()){
-        const ud=snap.val();
-        if(ud.status==='blocked'){
-          auth.signOut();
-          showAuthError('Your account has been blocked. Contact an administrator.');
-          $('authError').style.color='var(--red)';
-          return;
-        }
-        if(ud.status==='pending'){
-          auth.signOut();
-          showAuthError('Your account is awaiting admin approval. Please check back later.');
-          $('authError').style.color='var(--amber)';
-          return;
-        }
-        name=ud.name||'Player';
-      }else{
-        name='Player';
-        db.ref('users/'+token).set({name:name,elo:900,online:true,status:'active',lastSeen:firebase.database.ServerValue.TIMESTAMP});
-      }
-      $('authOverlay').classList.add('hidden');
-      $('logoutBtn').style.display='';
-      if(!appStarted){appStarted=true;startApp()}
-    });
-  }else{
-    token=null;name='';appStarted=false;firebaseUsersLoaded=false;
-    $('authOverlay').classList.remove('hidden');
-    $('logoutBtn').style.display='none';
-    $('myslot').innerHTML='';
-    $('loginBtn').disabled=false;$('loginBtn').textContent='Sign In';
-    $('regBtn').disabled=false;$('regBtn').textContent='Create Account';
-    $('authError').style.color='';
-  }
+  if(user){token=user.uid;db.ref('users/'+token).once('value').then(snap=>{
+    if(snap.exists()){const ud=snap.val();
+      if(ud.status==='blocked'){auth.signOut();showAuthError('Your account has been blocked. Contact an administrator.');$('authError').style.color='var(--red)';return}
+      if(ud.status==='pending'){auth.signOut();showAuthError('Your account is awaiting admin approval. Please check back later.');$('authError').style.color='var(--amber)';return}
+      name=ud.name||'Player';
+    }else{name='Player';db.ref('users/'+token).set({name:name,username:'player',elo:900,online:true,status:'active',lastSeen:firebase.database.ServerValue.TIMESTAMP})}
+    $('authOverlay').classList.add('hidden');$('logoutBtn').style.display='';
+    if(!appStarted){appStarted=true;startApp()}
+  })}
+  else{token=null;name='';appStarted=false;firebaseUsersLoaded=false;$('authOverlay').classList.remove('hidden');$('logoutBtn').style.display='none';$('myslot').innerHTML='';$('loginBtn').disabled=false;$('loginBtn').textContent='Sign In';$('regBtn').disabled=false;$('regBtn').textContent='Create Account';$('authError').style.color=''}
 });
 
-function startApp(){
-  setupPresence();
-  db.ref('users').on('value',s=>{allUsers=s.val()||{};firebaseUsersLoaded=true;cleanupStaleOpenGames();render()});
-  db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();cleanupStaleOpenGames();Object.keys(allGames).forEach(id=>{const g=allGames[id];if(g&&g.status==='finished')applyMyElo(id,g)});render()});
-  db.ref('users/'+token+'/chats').on('value',snap=>{myInbox=snap.val()||{};renderInbox();updateUnreadBadge()});
-  loadExistingConversations();render();
-}
+function startApp(){setupPresence();db.ref('users').on('value',s=>{allUsers=s.val()||{};firebaseUsersLoaded=true;cleanupStaleOpenGames();render()});db.ref('games').on('value',s=>{allGames=s.val()||{};myGameId=findMyGame();checkForChallenge();maybeTriggerAI();cleanupStaleOpenGames();Object.keys(allGames).forEach(id=>{const g=allGames[id];if(g&&g.status==='finished')applyMyElo(id,g)});render()});db.ref('users/'+token+'/chats').on('value',snap=>{myInbox=snap.val()||{};renderInbox();updateUnreadBadge()});loadExistingConversations();render()}
 function setupPresence(){const uref=db.ref('users/'+token);db.ref('.info/connected').on('value',s=>{if(s.val()===true){uref.onDisconnect().update({online:false,inGame:null,lastSeen:0});uref.update({name:name,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP})}});setInterval(()=>{uref.update({online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP})},30000)}
 function setInGame(g){db.ref('users/'+token+'/inGame').set(g||null)}
 function getPlayerActiveGame(ut){for(const id in allGames){const g=allGames[id];if(g.status==='playing'&&(g.white&&g.white.token===ut||g.black&&g.black.token===ut))return id}return null}
