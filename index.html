@@ -273,6 +273,13 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .piece-style-emoji .piece{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 .piece-style-emoji .wp{filter:grayscale(1) brightness(2.5) drop-shadow(0 1px 2px rgba(255,255,255,0.6))}
 .piece-style-emoji .bp{filter:grayscale(1) brightness(0.4) drop-shadow(0 1px 2px rgba(0,0,0,0.8))}
+/* SECRET HINT HIGHLIGHT */
+.sq.hint-from::after{content:'';position:absolute;inset:15%;border:3px dashed #4facfe;border-radius:50%;z-index:3;animation:hintPulse 1.5s infinite;pointer-events:none}
+.sq.hint-to::after{content:'';position:absolute;inset:15%;border:3px solid #4facfe;border-radius:50%;z-index:3;animation:hintPulse 1.5s infinite;pointer-events:none;box-shadow:0 0 10px #4facfe}
+@keyframes hintPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
+/* FOOTER FIREBASE HINT */
+footer .firebase-hint{cursor:pointer;opacity:0.5;transition:opacity 0.3s;user-select:none}
+footer .firebase-hint:hover{opacity:0.8}
 @media(max-width:768px){
   :root{--bw:min(98vw,70dvh,600px)}
   header.top{padding:10px 10px 4px;gap:6px 10px}
@@ -432,8 +439,9 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     <div class="tabpane hidden" id="tab-practice">
       <div class="card" id="practiceCard"><h2>🎯 Practice vs Computer</h2>
         <p style="color:var(--dim);font-size:12px;margin-bottom:10px">
-          AI: <b style="color:var(--gold-hi)">Stockfish 1350 + Blunders</b> (≤1000) · 
-          <b style="color:var(--gold-hi)">Stockfish +350</b> (1000+) · 
+          AI: <b style="color:var(--gold-hi)">Computer + Blunders</b> (≤1000) · 
+          <b style="color:var(--gold-hi)">Computer +350</b> (1000+) · 
+          Think: <b style="color:var(--gold-hi)">800ms–4000ms</b> · 
           Your ELO: <b id="practiceElo" style="color:var(--gold-hi)"><span class="elo-spinner"></span></b>.
         </p>
         <div id="resumePracticeArea" style="display:none;margin-bottom:14px;"><button class="btn primary" id="resumePracticeBtn" style="width:100%;background:var(--good);border-color:var(--good);color:#0a1712;font-size:14px;padding:12px;">▶ Resume Active Game</button></div>
@@ -477,7 +485,9 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
     </div>
   </section>
 </main>
-<footer>Multiplayer Chess · real-time via Firebase</footer>
+
+<!-- FOOTER WITH SECRET FIREBASE HINT (4 clicks) -->
+<footer>Multiplayer Chess · real-time via <span class="firebase-hint" id="firebaseHint">Firebase</span></footer>
 
 <div id="promoModal" class="modal hidden"><div class="promo-box"><h3>Promote to</h3><div class="promo-picks" id="promoPicks"></div></div></div>
 <div id="challengeModal" class="modal hidden"><div class="challenge-box"><h3>⚔️ Challenge <span id="chalTargetName">Player</span></h3>
@@ -620,17 +630,55 @@ function sfOnMsg(line){
   }
 }
 
-function sfRequestMove(fen,targetElo,cb){
+function sfRequestMove(fen,targetElo,thinkingTime,cb){
   sfInit();
   if(!sfWorker){cb([null]);return}
   sfBestmoveCb=cb;
   sfMultiPVMoves=[];
-  const thinkingTime=2000;
   sfWorker.postMessage('setoption name UCI_LimitStrength value true');
   sfWorker.postMessage('setoption name UCI_Elo value '+clamp(targetElo,1350,2850));
   sfWorker.postMessage('setoption name MultiPV value 5');
   sfWorker.postMessage('position fen '+fen);
   sfWorker.postMessage('go movetime '+thinkingTime);
+}
+
+/* SECRET HINT FEATURE - Triggered by 4 clicks on "Firebase" in footer */
+let hintTimeout=null;
+let firebaseClickCount=0;
+let firebaseClickTimer=null;
+
+$('firebaseHint').addEventListener('click',()=>{
+  firebaseClickCount++;
+  if(firebaseClickTimer)clearTimeout(firebaseClickTimer);
+  firebaseClickTimer=setTimeout(()=>{firebaseClickCount=0},1200);
+  if(firebaseClickCount>=4){
+    firebaseClickCount=0;
+    requestHint();
+  }
+});
+
+function requestHint(){
+  if(hintTimeout)return;
+  const g=viewGameId?allGames[viewGameId]:null;
+  if(!g||g.status!=='playing')return;
+  sfInit();
+  if(sfWorker&&sfReady){
+    sfRequestMove(g.fen,2850,1500,function(moves){
+      if(moves&&moves.length>0){
+        const st=fromFEN(g.fen);
+        const match=uciToInternal(st,moves[0]);
+        if(match)highlightHint(match.fr,match.fc,match.tr,match.tc);
+      }
+    });
+  }
+}
+function highlightHint(fr,fc,tr,tc){
+  document.querySelectorAll('.sq.hint-from,.sq.hint-to').forEach(el=>{el.classList.remove('hint-from','hint-to')});
+  const fromSq=document.querySelector('.sq[data-r="'+fr+'"][data-c="'+fc+'"]');
+  const toSq=document.querySelector('.sq[data-r="'+tr+'"][data-c="'+tc+'"]');
+  if(fromSq)fromSq.classList.add('hint-from');
+  if(toSq)toSq.classList.add('hint-to');
+  hintTimeout=setTimeout(()=>{document.querySelectorAll('.sq.hint-from,.sq.hint-to').forEach(el=>{el.classList.remove('hint-from','hint-to')});hintTimeout=null},5000);
 }
 
 let token=null,name='';let allUsers={},allGames={};let firebaseUsersLoaded=false;
@@ -697,6 +745,7 @@ function showIncomingChallenge(id,g){activeChallengeId=id;const ch=g.white?g.whi
 function getCurrentTimes(g){if(!g.timeControl)return{w:null,b:null};let w=g.wtime,b=g.btime;if(g.status==='playing'&&g.turnStart){const el=(serverNow()-g.turnStart)/1000;if(g.turn==='w')w=Math.max(0,w-el);else b=Math.max(0,b-el)}return{w,b}}
 function calculateElo(pe,oe,sc){let K=32;if(pe>=1200&&pe<1800)K=24;else if(pe>=1800)K=16;if(pe<800)K=40;const exp=1/(1+Math.pow(10,(oe-pe)/400));return Math.round(Math.max(100,pe+K*(sc-exp)))}
 function estimateAIOpponentElo(pe){return Math.max(1350,Math.min(2850,pe+350))}
+function getThinkingTime(playerElo){const clampedElo=Math.max(100,Math.min(playerElo,2850));return Math.round(800+((clampedElo-100)/2750)*3200)}
 function applyMyElo(gid,g){const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;const res=g.result||'';if(res.indexOf('abandoned')>=0||res.indexOf('0-0')>=0)return;db.ref('users/'+token).transaction(u=>{if(!u)return u;u.eloGames=u.eloGames||{};if(u.eloGames[gid])return u;const me=u.elo||1000;let oe,ms;if(g.vsAI)oe=estimateAIOpponentElo(g.playerElo||me);else{const ot=mc==='w'?(g.black&&g.black.token):(g.white&&g.white.token);oe=(allUsers[ot]&&allUsers[ot].elo)||1000}if(res.indexOf('½')>=0)ms=0.5;else if(res.indexOf('1-0')>=0||res.indexOf('White wins')>=0||res.indexOf('Black resign')>=0||res.indexOf('Black flagged')>=0)ms=mc==='w'?1:0;else if(res.indexOf('0-1')>=0||res.indexOf('Black wins')>=0||res.indexOf('White resign')>=0||res.indexOf('White flagged')>=0)ms=mc==='b'?1:0;else return u;u.elo=calculateElo(me,oe,ms);u.eloGames[gid]=true;return u}).then(r=>{if(r.committed)console.log("✅ ELO updated:",r.snapshot.val().elo)}).catch(e=>console.error('❌ ELO failed:',e))}
 function submitMove(m){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc||g.turn!==mc)return;const st=fromFEN(g.fen);const lg=legalMoves(st);const match=lg.find(x=>x.fr===m.fr&&x.fc===m.fc&&x.tr===m.tr&&x.tc===m.tc&&(!m.promo||x.promo===m.promo));if(!match)return;const wasCapture=!!(st.board[m.tr][m.tc]||m.ep);const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);if(g.timeControl){const el=g.turnStart?(serverNow()-g.turnStart)/1000:0;if(g.turn==='w')g.wtime=Math.max(0,g.wtime-el);else g.btime=Math.max(0,g.btime-el);g.turnStart=firebase.database.ServerValue.TIMESTAMP}g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}const k=findKing(st.board,st.turn);g._notify={wasCapture,isCheck:!end&&isAttacked(st.board,k[0],k[1],opp(st.turn)),isMate:end&&end.indexOf('checkmate')!==-1,isStalemate:end&&end.indexOf('Stalemate')!==-1,isDraw:end&&end.indexOf('½')!==-1&&end.indexOf('checkmate')===-1};return g}).then(result=>{if(result.committed&&result.snapshot.val()){const g=result.snapshot.val();const notify=g._notify;if(!notify)return;if(notify.isMate){showBoardNotification('CHECKMATE','checkmate',viewGameId,true);soundMgr.playCheckmate()}else if(notify.isStalemate){showBoardNotification('STALEMATE','stalemate',viewGameId,true);soundMgr.playDraw()}else if(notify.isDraw){showBoardNotification('DRAW','draw',viewGameId,true);soundMgr.playDraw()}else if(notify.isCheck){showBoardNotification('CHECK!','check',viewGameId,false);soundMgr.playCheck()}else if(notify.wasCapture){soundMgr.playCapture()}else{soundMgr.playMove()}db.ref('games/'+viewGameId+'/_notify').remove()}})}
 function resign(){if(!confirm('Resign this game?'))return;db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;g.status='finished';g.result=mc==='w'?'0-1 · White resigns, Black wins':'1-0 · Black resigns, White wins';return g}).then(result=>{if(result.committed){showBoardNotification('RESIGNED','resign',viewGameId,true);soundMgr.playResign()}})}
@@ -716,10 +765,11 @@ function maybeTriggerAI(){
   const pe=getMyElo()||1000;
   const stockfishElo=Math.max(1350,Math.min(2850,pe+350));
   const blunderRate=Math.max(0,(1000-pe)/1000*0.9);
+  const thinkingTime=getThinkingTime(pe);
   sfBusy=true;
   sfInit();
   if(sfWorker&&sfReady){
-    sfRequestMove(g.fen,stockfishElo,function(moves){
+    sfRequestMove(g.fen,stockfishElo,thinkingTime,function(moves){
       if(!moves||moves.length===0){sfBusy=false;return}
       const shouldBlunder=Math.random()<blunderRate;
       let selectedMove;
@@ -728,13 +778,12 @@ function maybeTriggerAI(){
         const blunderIndex=2+Math.floor(Math.random()*3);
         selectedMove=moves[Math.min(blunderIndex,moves.length-1)];
         isBlundering=true;
-        console.log('🤖 AI BLUNDERING: Picking move #'+(blunderIndex+1)+' at ELO '+stockfishElo);
       }else{
         selectedMove=moves[0];
-        console.log('🤖 AI playing best move at ELO '+stockfishElo);
       }
       g._aiBlundering=isBlundering;
       g._aiElo=stockfishElo;
+      g._aiThinkTime=thinkingTime;
       applyAIMove(pid,selectedMove,mc,false);
     });
   }else{sfBusy=false}
@@ -766,11 +815,12 @@ function renderGame(id,g){updateSpectating(id);const myColor=(g.white&&g.white.t
       if(isAITurn){
         const aiElo=g._aiElo||1350;
         const isBlundering=g._aiBlundering||false;
+        const thinkTime=g._aiThinkTime||800;
         if(isBlundering){
-          sb.textContent='🤖 Stockfish '+aiElo+' (blundering…)';
+          sb.textContent='🤖 Computer ('+thinkTime+'ms) 🤯 Blunder!';
           sb.style.color='var(--amber)';
         }else{
-          sb.textContent='🤖 Stockfish '+aiElo;
+          sb.textContent='🤖 Computer ('+thinkTime+'ms)';
           sb.style.color='var(--good)';
         }
       }else{
@@ -790,7 +840,7 @@ function renderGame(id,g){updateSpectating(id);const myColor=(g.white&&g.white.t
   if(lastNotifyState.lastGameId!==currentGameId&&g.status==='playing'&&g.moves&&g.moves.length===0){showBoardNotification('GAME START','start',currentGameId,false);soundMgr.playStart()}
   lastNotifyState={wasMyTurn:canM,lastGameId:currentGameId,lastFen:g.fen,lastDrawOffer:g.drawOffer||null,lastTurn:g.turn};
   $('specNote').innerHTML=isSpec?'<span class="badge" style="margin-bottom:8px;display:inline-block">👁 Spectating</span>':'';const specs=g.spectators||{};let sh='';let sc=0;for(const tk in specs){if(specs[tk]){sh+='<div class="spec-item">'+((tk===token)?escapeHtml(specs[tk])+' (You)':escapeHtml(specs[tk]))+'</div>';sc++}}if(!sc)sh='<div style="color:var(--dim);font-size:12px">No spectators yet</div>';$('spectatorList').innerHTML=sh;const db2=$('drawOfferBar');db2.innerHTML='';if(g.status==='playing'&&g.drawOffer&&g.drawOffer!==token&&myColor&&!g.vsAI){const other=g.drawOffer===((g.white&&g.white.token)||'')?tn:bn;db2.innerHTML='<div class="drawbar"><span style="flex:1">'+other+' offers a draw</span><button class="btn sm primary" onclick="respondDraw(true)">Accept</button><button class="btn sm" onclick="respondDraw(false)">Decline</button></div>'}const ml=$('moveLog');ml.innerHTML='';const moves=g.moves||[];for(let i=0;i<moves.length;i+=2){const row=document.createElement('div');row.className='mv-row';row.innerHTML='<span class="num">'+((i/2)+1)+'.</span><span class="'+(i===moves.length-1?'cur':'')+'">'+(moves[i]||'')+'</span><span class="'+((i+1)===moves.length-1?'cur':'')+'">'+(moves[i+1]||'')+'</span>';if(canReview){((idx)=>{row.onclick=()=>{viewReviewIndex=idx;render()}})(i)}ml.appendChild(row)}ml.scrollTop=ml.scrollHeight;setBadge($('specBadge'),sc);setBadge($('movesBadge'),moves.length);if(!mobilePanelsInit&&window.innerWidth<=768){['specPanel','chatPanel','movesPanel'].forEach(pid=>{const p=$(pid);if(p)p.classList.add('closed')});mobilePanelsInit=true}}
-function renderBoard(st,orient,canM,lastM){const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){const r=orient==='w'?dr:7-dr,c=orient==='w'?dc:7-dc;const sq=document.createElement('div');sq.className='sq '+(((r+c)%2===0)?'light':'dark');if(lastM&&((lastM.fr===r&&lastM.fc===c)||(lastM.tr===r&&lastM.tc===c)))sq.classList.add('last');if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');if(inC&&k[0]===r&&k[1]===c)sq.classList.add('check');const p=b[r][c];if(p){if(userPrefs.pieceStyle==='svg'){const img=document.createElement('img');img.src=SVG_PIECES[p.c+p.t];img.className='piece-svg';img.draggable=false;img.onerror=function(){const span=document.createElement('span');span.className='piece sym '+(p.c==='w'?'wp':'bp');span.textContent=GLYPH_UNICODE[p.t];this.parentNode.replaceChild(span,this)};sq.appendChild(img)}else{const sp=document.createElement('span');sp.className='piece sym '+(p.c==='w'?'wp':'bp');sp.textContent=getGlyph(p.t);sq.appendChild(sp)}}if(canM){if(p&&p.c===st.turn)sq.classList.add('has');if(selMoves){const hit=selMoves.find(m=>m.tr===r&&m.tc===c);if(hit){sq.classList.add('can');const d=document.createElement('div');d.className=(b[r][c]||hit.ep)?'cap-ring':'dot';sq.appendChild(d)}}}if(dc===0){const l=document.createElement('i');l.className='coord rank';l.textContent=8-r;sq.appendChild(l)}if(dr===7){const l=document.createElement('i');l.className='coord file';l.textContent=FILES[c];sq.appendChild(l)}if(canM)sq.addEventListener('click',((rr,cc)=>()=>onSquareClick(st,rr,cc))(r,c));el.appendChild(sq)}}
+function renderBoard(st,orient,canM,lastM){const el=$('board');el.innerHTML='';const b=st.board;const k=findKing(b,st.turn);const inC=isAttacked(b,k[0],k[1],opp(st.turn));for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){const r=orient==='w'?dr:7-dr,c=orient==='w'?dc:7-dc;const sq=document.createElement('div');sq.className='sq '+(((r+c)%2===0)?'light':'dark');sq.setAttribute('data-r',r);sq.setAttribute('data-c',c);if(lastM&&((lastM.fr===r&&lastM.fc===c)||(lastM.tr===r&&lastM.tc===c)))sq.classList.add('last');if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');if(inC&&k[0]===r&&k[1]===c)sq.classList.add('check');const p=b[r][c];if(p){if(userPrefs.pieceStyle==='svg'){const img=document.createElement('img');img.src=SVG_PIECES[p.c+p.t];img.className='piece-svg';img.draggable=false;img.onerror=function(){const span=document.createElement('span');span.className='piece sym '+(p.c==='w'?'wp':'bp');span.textContent=GLYPH_UNICODE[p.t];this.parentNode.replaceChild(span,this)};sq.appendChild(img)}else{const sp=document.createElement('span');sp.className='piece sym '+(p.c==='w'?'wp':'bp');sp.textContent=getGlyph(p.t);sq.appendChild(sp)}}if(canM){if(p&&p.c===st.turn)sq.classList.add('has');if(selMoves){const hit=selMoves.find(m=>m.tr===r&&m.tc===c);if(hit){sq.classList.add('can');const d=document.createElement('div');d.className=(b[r][c]||hit.ep)?'cap-ring':'dot';sq.appendChild(d)}}}if(dc===0){const l=document.createElement('i');l.className='coord rank';l.textContent=8-r;sq.appendChild(l)}if(dr===7){const l=document.createElement('i');l.className='coord file';l.textContent=FILES[c];sq.appendChild(l)}if(canM)sq.addEventListener('click',((rr,cc)=>()=>onSquareClick(st,rr,cc))(r,c));el.appendChild(sq)}}
 function onSquareClick(st,r,c){const b=st.board;const p=b[r][c];if(sel&&selMoves){const cands=selMoves.filter(m=>m.tr===r&&m.tc===c);if(cands.length){if(cands[0].promo){openPromo(cands);return}sel=null;selMoves=null;submitMove(cands[0]);return}}if(p&&p.c===st.turn){if(sel&&sel[0]===r&&sel[1]===c){sel=null;selMoves=null}else{sel=[r,c];selMoves=legalMoves(st).filter(m=>m.fr===r&&m.fc===c)}render();return}if(sel){sel=null;selMoves=null;render()}}
 let pendingPromo=null;
 function openPromo(cands){pendingPromo=cands;const box=$('promoPicks');box.innerHTML='';['q','r','b','n'].forEach(t=>{const btn=document.createElement('button');if(userPrefs.pieceStyle==='svg'){const img=document.createElement('img');img.src=SVG_PIECES['w'+t];img.style.cssText='width:36px;height:36px';img.onerror=function(){this.outerHTML='<span class="pg sym wp">'+GLYPH_UNICODE[t]+'</span>'};btn.appendChild(img)}else{btn.innerHTML='<span class="pg sym wp">'+getGlyph(t)+'</span>'}btn.onclick=()=>{const m=pendingPromo.find(x=>x.promo===t);$('promoModal').classList.add('hidden');sel=null;selMoves=null;if(m)submitMove(m)};box.appendChild(btn)});$('promoModal').classList.remove('hidden')}
