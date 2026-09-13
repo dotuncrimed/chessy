@@ -214,6 +214,14 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .reg-mode-option input{accent-color:var(--gold)}
 .reg-mode-option .reg-label{font-weight:700;font-size:13px}
 .reg-mode-option .reg-desc{font-size:11px;color:var(--dim)}
+/* ADMIN HINT TOGGLE */
+.hint-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:#0d1d13}
+.hint-toggle-label{font:600 13px Manrope,sans-serif}
+.hint-toggle-desc{font-size:11px;color:var(--dim);margin-top:2px}
+.hint-toggle{width:48px;height:26px;border-radius:13px;background:#0d1d13;border:1px solid var(--line);cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
+.hint-toggle.on{background:var(--gold);border-color:var(--gold)}
+.hint-toggle .toggle-knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--dim);transition:.2s}
+.hint-toggle.on .toggle-knob{left:24px;background:#221a0b}
 .board-notify{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:800 clamp(28px,6vw,52px) Marcellus,serif;letter-spacing:.12em;z-index:100;pointer-events:none;animation:boardNotify var(--notify-duration,2s) ease-in-out forwards;text-shadow:0 0 20px rgba(0,0,0,.8),0 4px 8px rgba(0,0,0,.5);white-space:nowrap}
 @keyframes boardNotify{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
 .board-notify.check{color:#ff4444;text-shadow:0 0 30px #ff0000,0 0 60px #ff000088}
@@ -273,11 +281,9 @@ footer{position:relative;z-index:1;text-align:center;color:var(--dim);font:500 1
 .piece-style-emoji .piece{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 .piece-style-emoji .wp{filter:grayscale(1) brightness(2.5) drop-shadow(0 1px 2px rgba(255,255,255,0.6))}
 .piece-style-emoji .bp{filter:grayscale(1) brightness(0.4) drop-shadow(0 1px 2px rgba(0,0,0,0.8))}
-/* SECRET HINT HIGHLIGHT */
 .sq.hint-from::after{content:'';position:absolute;inset:15%;border:3px dashed #4facfe;border-radius:50%;z-index:3;animation:hintPulse 1.5s infinite;pointer-events:none}
 .sq.hint-to::after{content:'';position:absolute;inset:15%;border:3px solid #4facfe;border-radius:50%;z-index:3;animation:hintPulse 1.5s infinite;pointer-events:none;box-shadow:0 0 10px #4facfe}
 @keyframes hintPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}
-/* FOOTER FIREBASE HINT */
 footer .firebase-hint{cursor:pointer;opacity:0.5;transition:opacity 0.3s;user-select:none}
 footer .firebase-hint:hover{opacity:0.8}
 @media(max-width:768px){
@@ -368,6 +374,16 @@ footer .firebase-hint:hover{opacity:0.8}
           <label class="reg-mode-option" onclick="setRegistrationMode('open')"><input type="radio" name="regMode" value="open"><div><div class="reg-label">Open Registration</div><div class="reg-desc">Anyone can register and play immediately</div></div></label>
           <label class="reg-mode-option" onclick="setRegistrationMode('approval')"><input type="radio" name="regMode" value="approval"><div><div class="reg-label">Require Approval</div><div class="reg-desc">New accounts need admin approval before playing</div></div></label>
           <label class="reg-mode-option" onclick="setRegistrationMode('closed')"><input type="radio" name="regMode" value="closed"><div><div class="reg-label">Registration Closed</div><div class="reg-desc">No new accounts can be created</div></div></label>
+        </div>
+      </div>
+      <!-- NEW: HINT SETTINGS -->
+      <div class="admin-section"><h3>🔮 Secret Hint Settings</h3>
+        <div class="hint-toggle-row">
+          <div>
+            <div class="hint-toggle-label">Enable Secret Hint</div>
+            <div class="hint-toggle-desc">Allow players to use the secret hint (click "Firebase" 4 times)</div>
+          </div>
+          <div class="hint-toggle" id="hintToggle" onclick="toggleHintSetting()"><div class="toggle-knob"></div></div>
         </div>
       </div>
       <div class="admin-section" id="pendingSection"><h3>⏳ Pending Registrations (<span id="pendingCount">0</span>)</h3><div id="pendingList"></div></div>
@@ -486,7 +502,6 @@ footer .firebase-hint:hover{opacity:0.8}
   </section>
 </main>
 
-<!-- FOOTER WITH SECRET FIREBASE HINT (4 clicks) -->
 <footer>Multiplayer Chess · real-time via <span class="firebase-hint" id="firebaseHint">Firebase</span></footer>
 
 <div id="promoModal" class="modal hidden"><div class="promo-box"><h3>Promote to</h3><div class="promo-picks" id="promoPicks"></div></div></div>
@@ -553,11 +568,14 @@ const ADMIN_PASSWORD='adminpogi';let adminClickCount=0,adminClickTimer=null,isAd
 $('crestLogo').addEventListener('click',()=>{adminClickCount++;if(adminClickTimer)clearTimeout(adminClickTimer);adminClickTimer=setTimeout(()=>{adminClickCount=0},800);if(adminClickCount>=3){adminClickCount=0;if(!token){alert('Please log in first.');return}$('adminPasswordInput').value='';$('adminPasswordError').textContent='';$('adminPasswordModal').classList.remove('hidden');setTimeout(()=>$('adminPasswordInput').focus(),100)}});
 $('adminPasswordInput').addEventListener('keydown',e=>{if(e.key==='Enter')verifyAdminPassword()});
 function verifyAdminPassword(){if($('adminPasswordInput').value===ADMIN_PASSWORD){isAdminSession=true;$('adminPasswordModal').classList.add('hidden');openAdminPanel()}else{$('adminPasswordError').textContent='Incorrect password.'}}
-function openAdminPanel(){$('adminOverlay').classList.remove('hidden');renderAdminPanel()}
+function openAdminPanel(){$('adminOverlay').classList.remove('hidden');renderAdminPanel();loadHintToggleState()}
 function closeAdminPanel(){$('adminOverlay').classList.add('hidden');isAdminSession=false}
-function renderAdminPanel(){loadRegistrationSettings();renderPendingUsers();renderAdminUsers()}
+function renderAdminPanel(){loadRegistrationSettings();renderPendingUsers();renderAdminUsers();loadHintToggleState()}
 function loadRegistrationSettings(){db.ref('settings/registrationMode').once('value').then(snap=>{const mode=snap.val()||'open';document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})})}
 function setRegistrationMode(mode){db.ref('settings/registrationMode').set(mode);document.querySelectorAll('.reg-mode-option').forEach(opt=>{const r=opt.querySelector('input');const sel=r.value===mode;r.checked=sel;opt.classList.toggle('selected',sel)})}
+/* ADMIN HINT TOGGLE */
+function loadHintToggleState(){db.ref('settings/hintEnabled').once('value').then(snap=>{const enabled=snap.val()!==false;$('hintToggle').classList.toggle('on',enabled)})}
+function toggleHintSetting(){db.ref('settings/hintEnabled').once('value').then(snap=>{const current=snap.val()!==false;const newState=!current;db.ref('settings/hintEnabled').set(newState);$('hintToggle').classList.toggle('on',newState)})}
 function renderPendingUsers(){const list=$('pendingList');const pending=Object.keys(allUsers).filter(uid=>allUsers[uid].status==='pending');$('pendingCount').textContent=pending.length;if(!pending.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No pending registrations.</p>';return}list.innerHTML='';pending.forEach(uid=>{const u=allUsers[uid];const div=document.createElement('div');div.className='admin-user-item';div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong><span class="admin-user-elo">@'+escapeHtml(u.username||'?')+'</span><span class="badge pending">PENDING</span></div><div class="admin-user-actions"><button class="btn sm primary" onclick="adminApprove(\''+uid+'\')">✓ Approve</button><button class="btn sm danger" onclick="adminDeny(\''+uid+'\')">✕ Deny</button></div>';list.appendChild(div)})}
 function renderAdminUsers(){const list=$('adminUserList');list.innerHTML='';const users=Object.keys(allUsers).sort((a,b)=>(allUsers[b].elo||1000)-(allUsers[a].elo||1000));if(!users.length){list.innerHTML='<p style="color:var(--dim);font-size:12px">No users found.</p>';return}users.forEach(uid=>{const u=allUsers[uid];const status=u.status||'active';const sc=status==='blocked'?'blocked':status==='pending'?'pending':'active';const div=document.createElement('div');div.className='admin-user-item';let acts='<button class="btn sm" onclick="adminEditName(\''+uid+'\')">✏️ Name</button><button class="btn sm" onclick="adminEditElo(\''+uid+'\')">📊 ELO</button>';if(uid!==token){if(status==='blocked')acts+='<button class="btn sm primary" onclick="adminUnblock(\''+uid+'\')">Unblock</button>';else acts+='<button class="btn sm danger" onclick="adminBlock(\''+uid+'\')">Block</button>'}div.innerHTML='<div class="admin-user-info"><strong>'+escapeHtml(u.name||'Unknown')+'</strong>'+(uid===token?'<span class="badge me">YOU</span>':'')+'<span class="admin-user-elo">@'+escapeHtml(u.username||'?')+' · ELO: '+(u.elo||1000)+'</span><span class="badge '+sc+'">'+status.toUpperCase()+'</span></div><div class="admin-user-actions">'+acts+'</div>';list.appendChild(div)})}
 function adminEditName(uid){const cur=allUsers[uid]?allUsers[uid].name:'';const nn=prompt('Enter new DISPLAY NAME for "'+cur+'":',cur);if(nn&&nn.trim()){db.ref('users/'+uid+'/name').set(nn.trim().slice(0,25));setTimeout(renderAdminPanel,500)}}
@@ -661,16 +679,21 @@ function requestHint(){
   if(hintTimeout)return;
   const g=viewGameId?allGames[viewGameId]:null;
   if(!g||g.status!=='playing')return;
-  sfInit();
-  if(sfWorker&&sfReady){
-    sfRequestMove(g.fen,2850,1500,function(moves){
-      if(moves&&moves.length>0){
-        const st=fromFEN(g.fen);
-        const match=uciToInternal(st,moves[0]);
-        if(match)highlightHint(match.fr,match.fc,match.tr,match.tc);
-      }
-    });
-  }
+  /* CHECK IF HINT IS ENABLED BY ADMIN */
+  db.ref('settings/hintEnabled').once('value').then(snap=>{
+    const hintEnabled=snap.val()!==false;
+    if(!hintEnabled)return;
+    sfInit();
+    if(sfWorker&&sfReady){
+      sfRequestMove(g.fen,2850,1500,function(moves){
+        if(moves&&moves.length>0){
+          const st=fromFEN(g.fen);
+          const match=uciToInternal(st,moves[0]);
+          if(match)highlightHint(match.fr,match.fc,match.tr,match.tc);
+        }
+      });
+    }
+  });
 }
 function highlightHint(fr,fc,tr,tc){
   document.querySelectorAll('.sq.hint-from,.sq.hint-to').forEach(el=>{el.classList.remove('hint-from','hint-to')});
