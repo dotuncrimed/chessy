@@ -603,6 +603,227 @@ function sfRequestMove(fen, elo, cb){
   sfWorker.postMessage('go movetime ' + movetime);
 }
 
+/* ============ DEFAULT AI WEB WORKER ============ */
+let aiWorker=null,aiWorkerReady=false,aiWorkerCallback=null,aiWorkerBusy=false;
+
+function initAIWorker(){
+  if(aiWorker) return;
+  
+  const workerCode = `
+    const FILES='abcdefgh';
+    const KN=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    const RD=[[-1,0],[1,0],[0,-1],[0,1]];
+    const BD=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    const K8=RD.concat(BD);
+    const AI_PV={p:100,n:320,b:330,r:500,q:900,k:0};
+    
+    function inb(r,c){return r>=0&&r<8&&c>=0&&c<8}
+    function opp(c){return c==='w'?'b':'w'}
+    function mv(fr,fc,tr,tc,x){return Object.assign({fr,fc,tr,tc},x||{})}
+    
+    function isAttacked(b,r,c,by){
+      const pr=by==='w'?r+1:r-1;
+      for(const dc of[-1,1]){if(inb(pr,c+dc)){const p=b[pr][c+dc];if(p&&p.c===by&&p.t==='p')return true}}
+      for(const[dr,dc]of KN){const rr=r+dr,cc=c+dc;if(inb(rr,cc)){const p=b[rr][cc];if(p&&p.c===by&&p.t==='n')return true}}
+      for(const[dr,dc]of K8){const rr=r+dr,cc=c+dc;if(inb(rr,cc)){const p=b[rr][cc];if(p&&p.c===by&&p.t==='k')return true}}
+      for(const[dr,dc]of RD){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const p=b[rr][cc];if(p){if(p.c===by&&(p.t==='r'||p.t==='q'))return true;break}rr+=dr;cc+=dc}}
+      for(const[dr,dc]of BD){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const p=b[rr][cc];if(p){if(p.c===by&&(p.t==='b'||p.t==='q'))return true;break}rr+=dr;cc+=dc}}
+      return false;
+    }
+    
+    function findKing(b,col){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=b[r][c];if(p&&p.t==='k'&&p.c===col)return[r,c]}return[0,0]}
+    
+    function pseudoMoves(s){
+      const ms=[],b=s.board,col=s.turn,en=opp(col);
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+        const p=b[r][c];if(!p||p.c!==col)continue;
+        if(p.t==='p'){
+          const dir=col==='w'?-1:1,start=col==='w'?6:1,promoR=col==='w'?0:7,r1=r+dir;
+          if(inb(r1,c)&&!b[r1][c]){
+            if(r1===promoR){for(const pr of['q','r','b','n'])ms.push(mv(r,c,r1,c,{promo:pr}))}
+            else{ms.push(mv(r,c,r1,c));if(r===start&&!b[r+2*dir][c])ms.push(mv(r,c,r+2*dir,c,{double:1}))}
+          }
+          for(const dc of[-1,1]){
+            const cc=c+dc;if(!inb(r1,cc))continue;const t=b[r1][cc];
+            if(t&&t.c===en){if(r1===promoR){for(const pr of['q','r','b','n'])ms.push(mv(r,c,r1,cc,{promo:pr}))}else ms.push(mv(r,c,r1,cc))}
+            else if(!t&&s.ep&&s.ep[0]===r1&&s.ep[1]===cc)ms.push(mv(r,c,r1,cc,{ep:1}))
+          }
+        } else if(p.t==='n'){
+          for(const[dr,dc]of KN){const rr=r+dr,cc=c+dc;if(!inb(rr,cc))continue;const t=b[rr][cc];if(!t)ms.push(mv(r,c,rr,cc));else if(t.c===en)ms.push(mv(r,c,rr,cc))}
+        } else if(p.t==='k'){
+          for(const[dr,dc]of K8){const rr=r+dr,cc=c+dc;if(!inb(rr,cc))continue;const t=b[rr][cc];if(!t)ms.push(mv(r,c,rr,cc));else if(t.c===en)ms.push(mv(r,c,rr,cc))}
+          const row=col==='w'?7:0;
+          if(r===row&&c===4){
+            b[row][4]=null;
+            if((col==='w'?s.castle.wK:s.castle.bK)&&!b[row][5]&&!b[row][6]&&b[row][7]&&b[row][7].t==='r'&&b[row][7].c===col&&!isAttacked(b,row,4,en)&&!isAttacked(b,row,5,en)&&!isAttacked(b,row,6,en))ms.push(mv(r,c,row,6,{castle:'K'}));
+            if((col==='w'?s.castle.wQ:s.castle.bQ)&&!b[row][1]&&!b[row][2]&&!b[row][3]&&b[row][0]&&b[row][0].t==='r'&&b[row][0].c===col&&!isAttacked(b,row,4,en)&&!isAttacked(b,row,3,en)&&!isAttacked(b,row,2,en))ms.push(mv(r,c,row,2,{castle:'Q'}));
+            b[row][4]=p;
+          }
+        } else {
+          const dirs=p.t==='b'?BD:p.t==='r'?RD:K8;
+          for(const[dr,dc]of dirs){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const t=b[rr][cc];if(!t)ms.push(mv(r,c,rr,cc));else{if(t.c===en)ms.push(mv(r,c,rr,cc));break}rr+=dr;cc+=dc}}
+        }
+      }
+      return ms;
+    }
+    
+    function makeM(s,m){
+      const b=s.board,p=b[m.fr][m.fc],col=p.c,row=col==='w'?7:0;
+      const u={cap:b[m.tr][m.tc],capSq:null,ep:s.ep,castle:{wK:s.castle.wK,wQ:s.castle.wQ,bK:s.castle.bK,bQ:s.castle.bQ},half:s.half,full:s.full,promo:!!m.promo,moved:p};
+      if(m.ep){const cr=m.tr+(col==='w'?1:-1);u.cap=b[cr][m.tc];u.capSq=[cr,m.tc];b[cr][m.tc]=null}
+      b[m.fr][m.fc]=null;b[m.tr][m.tc]=m.promo?{t:m.promo,c:col}:p;
+      if(m.castle==='K'){b[row][5]=b[row][7];b[row][7]=null}
+      if(m.castle==='Q'){b[row][3]=b[row][0];b[row][0]=null}
+      if(p.t==='k'){if(col==='w'){s.castle.wK=0;s.castle.wQ=0}else{s.castle.bK=0;s.castle.bQ=0}}
+      if(m.fr===7&&m.fc===7)s.castle.wK=0;if(m.fr===7&&m.fc===0)s.castle.wQ=0;
+      if(m.fr===0&&m.fc===7)s.castle.bK=0;if(m.fr===0&&m.fc===0)s.castle.bQ=0;
+      if(m.tr===7&&m.tc===7)s.castle.wK=0;if(m.tr===7&&m.tc===0)s.castle.wQ=0;
+      if(m.tr===0&&m.tc===7)s.castle.bK=0;if(m.tr===0&&m.tc===0)s.castle.bQ=0;
+      s.ep=m.double?[(m.fr+m.tr)/2,m.fc]:null;
+      s.half=(p.t==='p'||u.cap)?0:s.half+1;
+      if(col==='b')s.full++;
+      s.turn=opp(col);
+      return u;
+    }
+    
+    function unmakeM(s,m,u){
+      const b=s.board,col=opp(s.turn),row=col==='w'?7:0;
+      s.turn=col;if(col==='b')s.full--;s.half=u.half;s.ep=u.ep;s.castle=u.castle;
+      if(m.castle==='K'){b[row][7]=b[row][5];b[row][5]=null}
+      if(m.castle==='Q'){b[row][0]=b[row][3];b[row][3]=null}
+      b[m.fr][m.fc]=u.promo?{t:'p',c:col}:b[m.tr][m.tc];
+      b[m.tr][m.tc]=u.capSq?null:u.cap;
+      if(u.capSq)b[u.capSq[0]][u.capSq[1]]=u.cap;
+    }
+    
+    function legalMoves(s){
+      const b=s.board,col=s.turn,en=opp(col),out=[],ms=pseudoMoves(s);
+      for(const m of ms){
+        const p=b[m.fr][m.fc];const u=makeM(s,m);
+        const nk=p.t==='k'?[m.tr,m.tc]:findKing(b,col);
+        if(!isAttacked(b,nk[0],nk[1],en))out.push(m);
+        unmakeM(s,m,u);
+      }
+      return out;
+    }
+    
+    function fromFEN(fen){
+      const parts=fen.trim().split(/\\s+/);
+      const rows=parts[0].split('/');const b=[];
+      for(let r=0;r<8;r++){b.push([null,null,null,null,null,null,null,null]);let c=0;for(const ch of rows[r]){if(/[1-8]/.test(ch))c+=parseInt(ch);else{b[r][c]={t:ch.toLowerCase(),c:ch===ch.toUpperCase()?'w':'b'};c++}}}
+      const cast=parts[2]||'-';const ep=parts[3]||'-';let epSq=null;
+      if(ep!=='-')epSq=[8-parseInt(ep[1]),FILES.indexOf(ep[0])];
+      return{board:b,turn:parts[1]||'w',castle:{wK:cast.includes('K'),wQ:cast.includes('Q'),bK:cast.includes('k'),bQ:cast.includes('q')},ep:epSq,half:parseInt(parts[4]||'0'),full:parseInt(parts[5]||'1')};
+    }
+    
+    function evalAI(board,ai){
+      let s=0;
+      for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+        const p=board[r][c];if(!p)continue;
+        let v=AI_PV[p.t]||0;
+        if(p.t!=='r'&&p.t!=='k'){const cd=Math.max(Math.abs(r-3.5),Math.abs(c-3.5));if(cd<=1.5)v+=4;if(cd<=0.5)v+=6}
+        if(p.t==='p')v+=(p.c==='w'?(6-r):(r-1));
+        s+=(p.c==='w'?v:-v);
+      }
+      return ai==='w'?s:-s;
+    }
+    
+    function movOrd(st,m){
+      const p=st.board[m.fr][m.fc],t=st.board[m.tr][m.tc];
+      let s=0;
+      if(t&&p)s+=10*(AI_PV[t.t]||0)-(AI_PV[p.t]||0);
+      if(m.ep)s+=100;
+      if(m.promo)s+=AI_PV[m.promo]||800;
+      if(m.castle)s+=50;
+      return s;
+    }
+    
+    function aiSrch(st,d,a,b,ai){
+      const lg=legalMoves(st);
+      if(lg.length===0){const k=findKing(st.board,st.turn);if(isAttacked(st.board,k[0],k[1],opp(st.turn)))return st.turn===ai?-100000-d:100000+d;return 0}
+      if(d<=0)return evalAI(st.board,ai);
+      lg.sort((x,y)=>movOrd(st,y)-movOrd(st,x));
+      if(st.turn===ai){
+        let best=-Infinity;
+        for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v>best)best=v;if(best>a)a=best;if(b<=a)break}
+        return best;
+      } else {
+        let best=Infinity;
+        for(const m of lg){const u=makeM(st,m);const v=aiSrch(st,d-1,a,b,ai);unmakeM(st,m,u);if(v<best)best=v;if(best<b)b=best;if(b<=a)break}
+        return best;
+      }
+    }
+    
+    function getBlunderRate(elo) {
+      if (elo <= 300) return 0.9;
+      if (elo <= 600) return 0.6;
+      if (elo <= 900) return 0.3;
+      return 0;
+    }
+    
+    function getDefaultAIMove(st, ai, elo){
+      const lg = legalMoves(st);
+      if(!lg.length) return null;
+      
+      let d = 1;
+      if(elo >= 1551 && elo <= 1800) d = 7;
+      else if(elo >= 1350 && elo <= 1550) d = 6;
+      else if(elo >= 1101 && elo <= 1349) d = 5;
+      else if(elo >= 901 && elo <= 1100) d = 4;
+      else if(elo >= 601 && elo <= 900) d = 2;
+      
+      let bs = -Infinity, bm = [], al = -Infinity;
+      const ord = lg.slice().sort((a,b) => movOrd(st,b) - movOrd(st,a));
+      
+      for(const m of ord){
+        const u = makeM(st,m);
+        const sc = aiSrch(st, d-1, al, Infinity, ai);
+        unmakeM(st,m,u);
+        if(sc > bs){ bs = sc; bm = [m]; }
+        else if(sc >= bs - 10) bm.push(m);
+        if(sc > al) al = sc;
+      }
+      
+      const bestMove = bm.length > 0 ? bm[Math.floor(Math.random()*bm.length)] : lg[0];
+      const blunderRate = getBlunderRate(elo);
+      if(blunderRate > 0 && Math.random() < blunderRate){
+        return lg[Math.floor(Math.random()*lg.length)];
+      }
+      return bestMove;
+    }
+    
+    self.onmessage = function(e) {
+      if (e.data.type === 'move') {
+        const st = fromFEN(e.data.fen);
+        const move = getDefaultAIMove(st, e.data.ai, e.data.elo);
+        self.postMessage({ move: move });
+      }
+    };
+  `;
+  
+  try {
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    aiWorker = new Worker(url);
+    aiWorker.onmessage = function(e) {
+      if (aiWorkerCallback) {
+        const cb = aiWorkerCallback;
+        aiWorkerCallback = null;
+        aiWorkerBusy = false;
+        cb(e.data.move);
+      }
+    };
+    aiWorker.onerror = function(e) {
+      console.error('AI Worker Error:', e.message);
+      aiWorkerBusy = false;
+    };
+    aiWorkerReady = true;
+    console.log('✅ AI Worker initialized');
+  } catch (e) {
+    console.error('Failed to create AI Worker:', e);
+  }
+}
+
 function getBlunderRate(elo) {
   if (elo <= 300) return 0.9;
   if (elo <= 600) return 0.6;
@@ -695,7 +916,7 @@ function openProfile(ut){const u=allUsers[ut];if(!u)return;let html='<h2 style="
 function viewFromProfile(id){$('profileModal').classList.add('hidden');goToGame(id)}
 function findMyGame(){for(const id in allGames){const g=allGames[id];if(!g.vsAI&&(g.status==='waiting'||g.status==='playing')&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token)))return id}return null}
 function findPracticeGame(){for(const id in allGames){const g=allGames[id];if(g.vsAI&&g.status==='playing'&&((g.white&&g.white.token===token)||(g.black&&g.black.token===token)))return id}return null}
-function startPractice(){const ex=findPracticeGame();const go=()=>{sfInit();const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(practiceColor==='w')w=me;else b=me;db.ref('games/'+id).set({status:'playing',vsAI:true,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo()||1000,timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)};if(ex){if(!confirm("Abandon active practice game and start new?"))return;abandonGame(ex).then(go)}else go()}
+function startPractice(){const ex=findPracticeGame();const go=()=>{sfInit();initAIWorker();const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(practiceColor==='w')w=me;else b=me;db.ref('games/'+id).set({status:'playing',vsAI:true,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,playerElo:getMyElo()||1000,timeControl:0,wtime:0,btime:0,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)};if(ex){if(!confirm("Abandon active practice game and start new?"))return;abandonGame(ex).then(go)}else go()}
 function abandonGame(id){return db.ref('games/'+id).transaction(g=>{if(!g)return;if(g.status!=='playing'&&g.status!=='waiting')return;g.status='finished';g.result='0-0 · Game abandoned by player';return g})}
 function createOpenGame(){const id=db.ref('games').push().key;const me={token,name};let w=null,b=null;if(createColor==='w')w=me;else if(createColor==='b')b=me;else{if(Math.random()<0.5)w=me;else b=me}db.ref('games/'+id).set({status:'waiting',vsAI:false,white:w,black:b,turn:'w',moves:[],fens:[START_FEN],fen:START_FEN,challengedToken:null,timeControl:createTime,wtime:createTime,btime:createTime,turnStart:null,createdAt:firebase.database.ServerValue.TIMESTAMP});goToGame(id);setInGame(id)}
 function openChallengeModal(tt,tn){chalTarget=tt;chalColor='w';chalTime=0;$('chalTargetName').textContent=tn;document.querySelectorAll('#chalColorSeg button').forEach(b=>b.classList.toggle('on',b.dataset.c==='w'));document.querySelectorAll('#chalTimeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.t==='0'));$('challengeModal').classList.remove('hidden')}
@@ -734,23 +955,47 @@ function maybeTriggerAI(){
   if(!mc) return;
   const ac = opp(mc);
   if(g.turn !== ac) return;
-  if(sfBusy) return;
-  sfBusy = true;
+  if(aiWorkerBusy || sfBusy) return;
+  
   const pe = getMyElo() || 1000;
+  
+  // Stockfish for 1801+ ELO
   if(pe >= 1801){
+    sfBusy = true;
     sfInit();
     if(sfWorker && sfReady){
       sfRequestMove(g.fen, pe, uci => applyAIMove(pid, uci, mc, false));
       return;
     }
+    sfBusy = false;
   }
-  setTimeout(() => {
-    const st = fromFEN(g.fen);
-    const move = getDefaultAIMove(st, ac, pe);
-    applyAIMove(pid, move, mc, false);
-  }, 400);
+  
+  // Default AI in Web Worker for < 1801 ELO
+  aiWorkerBusy = true;
+  initAIWorker();
+  
+  if(aiWorker && aiWorkerReady){
+    aiWorkerCallback = function(move) {
+      applyAIMove(pid, move, mc, false);
+    };
+    aiWorker.postMessage({
+      type: 'move',
+      fen: g.fen,
+      ai: ac,
+      elo: pe
+    });
+    console.log('🤖 AI Worker computing move at ELO ' + pe + '...');
+  } else {
+    // Fallback: run on main thread for low depths only
+    aiWorkerBusy = false;
+    setTimeout(() => {
+      const st = fromFEN(g.fen);
+      const move = getDefaultAIMove(st, ac, pe);
+      applyAIMove(pid, move, mc, false);
+    }, 400);
+  }
 }
-function applyAIMove(gid,md,hc,sb){db.ref('games/'+gid).transaction(g=>{if(!g||g.status!=='playing')return;const ac=opp(hc);if(g.turn!==ac)return;const st=fromFEN(g.fen);let match=null;if(md&&typeof md==='string')match=uciToInternal(st,md);else if(md&&typeof md==='object'){const lg=legalMoves(st);match=lg.find(x=>x.fr===md.fr&&x.fc===md.fc&&x.tr===md.tr&&x.tc===md.tc&&(!md.promo||x.promo===md.promo))||null}if(!match)match=getFallbackMove(st);if(!match)return;const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}return g}).then(()=>{sfBusy=false;soundMgr.playMove()})}
+function applyAIMove(gid,md,hc,sb){db.ref('games/'+gid).transaction(g=>{if(!g||g.status!=='playing')return;const ac=opp(hc);if(g.turn!==ac)return;const st=fromFEN(g.fen);let match=null;if(md&&typeof md==='string')match=uciToInternal(st,md);else if(md&&typeof md==='object'){const lg=legalMoves(st);match=lg.find(x=>x.fr===md.fr&&x.fc===md.fc&&x.tr===md.tr&&x.tc===md.tc&&(!md.promo||x.promo===md.promo))||null}if(!match)match=getFallbackMove(st);if(!match)return;const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}return g}).then(()=>{sfBusy=false;aiWorkerBusy=false;soundMgr.playMove()})}
 function cleanupStaleOpenGames(){if(!allGames||!Object.keys(allUsers).length)return;const now=serverNow();for(const id in allGames){const g=allGames[id];if(!g||g.vsAI||g.status!=='waiting')continue;if(g.createdAt&&now-g.createdAt<20000)continue;const owner=g.white||g.black;if(!owner){db.ref('games/'+id).remove();continue}const ou=allUsers[owner.token];if(!ou||!isOnline(ou)){db.ref('games/'+id).transaction(c=>{if(!c)return;if(c.status!=='waiting')return;return null})}}}
 function goToGame(id){viewGameId=id;viewReviewIndex=null;updateSpectating(id);setChatGame(id);lastNotifyState={wasMyTurn:false,lastGameId:null,lastFen:null,lastDrawOffer:null,lastTurn:null};render()}
 function goToLobby(){updateSpectating(null);setChatGame(null);viewGameId=null;setInGame(null);render()}
