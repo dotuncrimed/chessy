@@ -792,6 +792,37 @@ function offerDraw(){db.ref('games/'+viewGameId+'/drawOffer').set(token)}
 function respondDraw(acc){db.ref('games/'+viewGameId).transaction(g=>{if(!g)return;if(acc){g.status='finished';g.result='½-½ · Draw agreed'}g.drawOffer=null;return g}).then(result=>{if(result.committed&&acc){showBoardNotification('DRAW','draw',viewGameId,true);soundMgr.playDraw()}})}
 function flagTime(loser){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;g.status='finished';g.result=loser==='w'?'0-1 · White flagged, Black wins on time':'1-0 · Black flagged, White wins on time';return g}).then(result=>{if(result.committed){showBoardNotification("TIME'S UP!",'timeout',viewGameId,true);soundMgr.playTimeout()}})}
 
+
+  /* BLUNDER RATE — how often AI plays a non-best move */
+function getBlunderRate(playerElo){
+  if(playerElo<=200)return 0.90;   /* 90% weak moves */
+  if(playerElo<=400)return 0.75;   /* 75% weak moves */
+  if(playerElo<=600)return 0.55;   /* 55% weak moves */
+  if(playerElo<=800)return 0.35;   /* 35% weak moves */
+  if(playerElo<=1000)return 0.20;  /* 20% weak moves */
+  if(playerElo<=1200)return 0.10;  /* 10% weak moves */
+  if(playerElo<=1349)return 0.05;  /* rare slips */
+  return 0;                        /* 1350+: Stockfish full */
+}
+
+/* PICK BLUNDER MOVE — random legal moves for very low ELO */
+function pickBlunderMove(moves,legalMovesList,playerElo){
+  /* For very low ELO: mostly TRUE RANDOM moves (real beginner behavior) */
+  if(playerElo<=600&&legalMovesList.length>0){
+    if(Math.random()<0.7){
+      /* Truly random legal move */
+      return legalMovesList[Math.floor(Math.random()*legalMovesList.length)];
+    }
+  }
+  /* Otherwise: pick from Stockfish's WORST available moves */
+  if(moves&&moves.length>=2){
+    const bottomHalf=moves.slice(Math.floor(moves.length/2));
+    return bottomHalf[Math.floor(Math.random()*bottomHalf.length)];
+  }
+  if(moves&&moves.length>0)return moves[moves.length-1];
+  if(legalMovesList.length>0)return legalMovesList[Math.floor(Math.random()*legalMovesList.length)];
+  return null;
+}
 /* DEPTH-BASED AI — Stockfish 18 single-threaded with fallback */
 function maybeTriggerAI(){
   const pid=findPracticeGame();
@@ -806,19 +837,33 @@ function maybeTriggerAI(){
   const pe=getMyElo()||1000;
   sfBusy=true;
   sfInit();
+  
   sfRequestMove(g.fen,pe,function(moves){
     sfBusy=false;
+    const st=fromFEN(g.fen);
+    const legalMovesList=legalMoves(st);
+    
     if(!moves||!moves.length){
-      /* Fallback to local move if Stockfish fails */
-      const st=fromFEN(g.fen);
-      const lg=legalMoves(st);
-      const mv=lg.length?lg[Math.floor(Math.random()*lg.length)]:null;
+      /* Fallback: random legal move */
+      const mv=legalMovesList.length?legalMovesList[Math.floor(Math.random()*legalMovesList.length)]:null;
       if(mv){g._aiElo=pe;g._aiDepth='fallback';applyAIMove(pid,mv,mc,false)}
       return;
     }
+    
+    const blunderRate=getBlunderRate(pe);
+    const isBlundering=Math.random()<blunderRate;
+    let selectedMove;
+    
+    if(isBlundering){
+      selectedMove=pickBlunderMove(moves,legalMovesList,pe);
+    }else{
+      selectedMove=moves[0];
+    }
+    
     g._aiElo=pe;
     g._aiDepth=pe>=1350?'full':pe>=1100?3:pe>=800?2:1;
-    applyAIMove(pid,moves[0],mc,false);
+    g._aiBlundering=isBlundering;
+    applyAIMove(pid,selectedMove,mc,isBlundering);
   });
 }
 
