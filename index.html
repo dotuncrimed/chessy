@@ -647,32 +647,32 @@ function sfOnMsg(line){
   }
 }
 
-/* DEPTH-BASED WEAKENING — works with Stockfish 18 single-threaded */
+/* STOCKFISH REQUEST — MultiPV 5 for sub-1500, UCI_Elo for 1500+ */
 function sfRequestMove(fen,targetElo,cb){
   sfInit();
   if(!sfWorker){cb(null);return}
   sfBestmoveCb=cb;
   sfMultiPVMoves=[];
-  /* CORRECT UCI ORDER: options -> isready -> position -> go */
-  if(targetElo>=1350){
-    /* 1350+: Native ELO limiter */
+  
+  if(targetElo>=1500){
+    /* 1500+: Native ELO limiter, single best move */
     sfWorker.postMessage('setoption name UCI_LimitStrength value true');
-    sfWorker.postMessage('setoption name UCI_Elo value '+clamp(targetElo,1350,2850));
+    sfWorker.postMessage('setoption name UCI_Elo value '+clamp(targetElo,1500,2850));
     sfWorker.postMessage('setoption name MultiPV value 1');
     sfWorker.postMessage('isready');
     sfWorker.postMessage('position fen '+fen);
     sfWorker.postMessage('go movetime 900');
   }else{
-    /* <1350: Depth-limited with Skill Level 0 */
+    /* <1500: Depth-limited + MultiPV 5 for blunder selection */
     sfWorker.postMessage('setoption name UCI_LimitStrength value false');
     sfWorker.postMessage('setoption name Skill Level value 0');
-    sfWorker.postMessage('setoption name MultiPV value 1');
+    sfWorker.postMessage('setoption name MultiPV value 5');
     sfWorker.postMessage('isready');
     sfWorker.postMessage('position fen '+fen);
-    const depth=targetElo>=1100?3:targetElo>=800?2:1;
+    const depth=targetElo>=1300?4:targetElo>=1100?3:targetElo>=800?2:1;
     sfWorker.postMessage('go depth '+depth+' movetime 1500');
   }
-  /* SAFETY NET: if engine silent 10s, bail to fallback */
+  /* SAFETY NET */
   setTimeout(()=>{if(sfBestmoveCb){const c=sfBestmoveCb;sfBestmoveCb=null;sfMultiPVMoves=[];c(null)}},10000);
 }
 
@@ -746,7 +746,18 @@ function checkForChallenge(){if(activeChallengeId&&!allGames[activeChallengeId])
 function showIncomingChallenge(id,g){activeChallengeId=id;const ch=g.white?g.white.name:(g.black?g.black.name:'Someone');const tt=g.timeControl?Math.round(g.timeControl/60)+' min':'No time';$('incomingText').textContent=ch+' challenges you! ('+tt+')';$('incomingAccept').onclick=()=>{activeChallengeId=null;$('incomingModal').classList.add('hidden');joinGame(id)};$('incomingDecline').onclick=()=>{dismissedChallenges[id]=true;activeChallengeId=null;$('incomingModal').classList.add('hidden');cancelGame(id)};$('incomingModal').classList.remove('hidden')}
 function getCurrentTimes(g){if(!g.timeControl)return{w:null,b:null};let w=g.wtime,b=g.btime;if(g.status==='playing'&&g.turnStart){const el=(serverNow()-g.turnStart)/1000;if(g.turn==='w')w=Math.max(0,w-el);else b=Math.max(0,b-el)}return{w,b}}
 function calculateElo(pe,oe,sc){let K=32;if(pe>=1200&&pe<1800)K=24;else if(pe>=1800)K=16;if(pe<800)K=40;const exp=1/(1+Math.pow(10,(oe-pe)/400));return Math.round(Math.max(100,pe+K*(sc-exp)))}
-function estimateAIOpponentElo(pe){return clamp(pe,1350,2850)}
+/* ESTIMATE AI EFFECTIVE ELO — for ELO calculation */
+function estimateAIOpponentElo(pe){
+  if(pe<=200)return 200;
+  if(pe<=400)return 400;
+  if(pe<=600)return 550;
+  if(pe<=800)return 700;
+  if(pe<=1000)return 900;
+  if(pe<=1200)return 1100;
+  if(pe<=1299)return 1250;
+  if(pe<=1500)return 1400;
+  return clamp(pe,1500,2850);
+}
 /* Track which games already had ELO applied this session */
 let appliedEloGames={};
 
@@ -793,7 +804,7 @@ function respondDraw(acc){db.ref('games/'+viewGameId).transaction(g=>{if(!g)retu
 function flagTime(loser){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;g.status='finished';g.result=loser==='w'?'0-1 · White flagged, Black wins on time':'1-0 · Black flagged, White wins on time';return g}).then(result=>{if(result.committed){showBoardNotification("TIME'S UP!",'timeout',viewGameId,true);soundMgr.playTimeout()}})}
 
 
-  /* BLUNDER RATE — how often AI plays a non-best move */
+/* BLUNDER RATE — extended to 1500 ELO */
 function getBlunderRate(playerElo){
   if(playerElo<=200)return 0.90;   /* 90% weak moves */
   if(playerElo<=400)return 0.75;   /* 75% weak moves */
@@ -801,20 +812,29 @@ function getBlunderRate(playerElo){
   if(playerElo<=800)return 0.35;   /* 35% weak moves */
   if(playerElo<=1000)return 0.20;  /* 20% weak moves */
   if(playerElo<=1200)return 0.10;  /* 10% weak moves */
-  if(playerElo<=1349)return 0.05;  /* rare slips */
-  return 0;                        /* 1350+: Stockfish full */
+  if(playerElo<=1299)return 0.08;  /* 8% weak moves */
+  if(playerElo<=1500)return 0.05;  /* 5% weak moves (5th best) */
+  return 0;                        /* 1501+: no blunders */
 }
 
-/* PICK BLUNDER MOVE — random legal moves for very low ELO */
+/* PICK BLUNDER MOVE — 5th best move at 1300-1500 */
 function pickBlunderMove(moves,legalMovesList,playerElo){
   /* For very low ELO: mostly TRUE RANDOM moves (real beginner behavior) */
   if(playerElo<=600&&legalMovesList.length>0){
     if(Math.random()<0.7){
-      /* Truly random legal move */
       return legalMovesList[Math.floor(Math.random()*legalMovesList.length)];
     }
   }
-  /* Otherwise: pick from Stockfish's WORST available moves */
+  
+  /* For 1300-1500: pick the 5th best move */
+  if(playerElo>=1300){
+    if(moves&&moves.length>=5)return moves[4]; /* 5th best move */
+    if(moves&&moves.length>0)return moves[moves.length-1];
+    if(legalMovesList.length>0)return legalMovesList[Math.floor(Math.random()*legalMovesList.length)];
+    return null;
+  }
+  
+  /* For 600-1299: pick from bottom half of Stockfish's ranked moves */
   if(moves&&moves.length>=2){
     const bottomHalf=moves.slice(Math.floor(moves.length/2));
     return bottomHalf[Math.floor(Math.random()*bottomHalf.length)];
