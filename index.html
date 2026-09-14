@@ -747,7 +747,45 @@ function showIncomingChallenge(id,g){activeChallengeId=id;const ch=g.white?g.whi
 function getCurrentTimes(g){if(!g.timeControl)return{w:null,b:null};let w=g.wtime,b=g.btime;if(g.status==='playing'&&g.turnStart){const el=(serverNow()-g.turnStart)/1000;if(g.turn==='w')w=Math.max(0,w-el);else b=Math.max(0,b-el)}return{w,b}}
 function calculateElo(pe,oe,sc){let K=32;if(pe>=1200&&pe<1800)K=24;else if(pe>=1800)K=16;if(pe<800)K=40;const exp=1/(1+Math.pow(10,(oe-pe)/400));return Math.round(Math.max(100,pe+K*(sc-exp)))}
 function estimateAIOpponentElo(pe){return clamp(pe,1350,2850)}
-function applyMyElo(gid,g){const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;const res=g.result||'';if(res.indexOf('abandoned')>=0||res.indexOf('0-0')>=0)return;db.ref('users/'+token).transaction(u=>{if(!u)return u;u.eloGames=u.eloGames||{};if(u.eloGames[gid])return u;const me=u.elo||1000;let oe,ms;if(g.vsAI)oe=estimateAIOpponentElo(g.playerElo||me);else{const ot=mc==='w'?(g.black&&g.black.token):(g.white&&g.white.token);oe=(allUsers[ot]&&allUsers[ot].elo)||1000}if(res.indexOf('½')>=0)ms=0.5;else if(res.indexOf('1-0')>=0||res.indexOf('White wins')>=0||res.indexOf('Black resign')>=0||res.indexOf('Black flagged')>=0)ms=mc==='w'?1:0;else if(res.indexOf('0-1')>=0||res.indexOf('Black wins')>=0||res.indexOf('White resign')>=0||res.indexOf('White flagged')>=0)ms=mc==='b'?1:0;else return u;u.elo=calculateElo(me,oe,ms);u.eloGames[gid]=true;return u}).then(r=>{if(r.committed)console.log("✅ ELO updated:",r.snapshot.val().elo)}).catch(e=>console.error('❌ ELO failed:',e))}
+/* Track which games already had ELO applied this session */
+let appliedEloGames={};
+
+function applyMyElo(gid,g){
+  /* Prevent repeated calls within same session */
+  if(appliedEloGames[gid])return;
+  
+  const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;
+  if(!mc)return;
+  const res=g.result||'';
+  if(res.indexOf('abandoned')>=0||res.indexOf('0-0')>=0)return;
+  
+  /* Mark as processed immediately to prevent re-entry */
+  appliedEloGames[gid]=true;
+  
+  db.ref('users/'+token).transaction(u=>{
+    if(!u)return u;
+    u.eloGames=u.eloGames||{};
+    /* Firebase-level guard for cross-session protection */
+    if(u.eloGames[gid])return u;
+    const me=u.elo||1000;
+    let oe,ms;
+    if(g.vsAI){
+      oe=estimateAIOpponentElo(g.playerElo||me);
+    }else{
+      const ot=mc==='w'?(g.black&&g.black.token):(g.white&&g.white.token);
+      oe=(allUsers[ot]&&allUsers[ot].elo)||1000;
+    }
+    if(res.indexOf('½')>=0)ms=0.5;
+    else if(res.indexOf('1-0')>=0||res.indexOf('White wins')>=0||res.indexOf('Black resign')>=0||res.indexOf('Black flagged')>=0)ms=mc==='w'?1:0;
+    else if(res.indexOf('0-1')>=0||res.indexOf('Black wins')>=0||res.indexOf('White resign')>=0||res.indexOf('White flagged')>=0)ms=mc==='b'?1:0;
+    else return u;
+    u.elo=calculateElo(me,oe,ms);
+    u.eloGames[gid]=true;
+    return u;
+  }).then(r=>{
+    if(r&&r.committed)console.log("✅ ELO updated:",r.snapshot.val().elo);
+  }).catch(e=>console.error('❌ ELO failed:',e));
+}
 function submitMove(m){db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc||g.turn!==mc)return;const st=fromFEN(g.fen);const lg=legalMoves(st);const match=lg.find(x=>x.fr===m.fr&&x.fc===m.fc&&x.tr===m.tr&&x.tc===m.tc&&(!m.promo||x.promo===m.promo));if(!match)return;const wasCapture=!!(st.board[m.tr][m.tc]||m.ep);const san=toSAN(st,match);makeM(st,match);g.fen=toFEN(st);g.moves=(g.moves||[]).concat([san]);g.fens=(g.fens||[START_FEN]).concat([g.fen]);if(g.timeControl){const el=g.turnStart?(serverNow()-g.turnStart)/1000:0;if(g.turn==='w')g.wtime=Math.max(0,g.wtime-el);else g.btime=Math.max(0,g.btime-el);g.turnStart=firebase.database.ServerValue.TIMESTAMP}g.turn=st.turn;g.lastMove={fr:match.fr,fc:match.fc,tr:match.tr,tc:match.tc};const end=detectEnd(st);if(end){g.status='finished';g.result=end}const k=findKing(st.board,st.turn);g._notify={wasCapture,isCheck:!end&&isAttacked(st.board,k[0],k[1],opp(st.turn)),isMate:end&&end.indexOf('checkmate')!==-1,isStalemate:end&&end.indexOf('Stalemate')!==-1,isDraw:end&&end.indexOf('½')!==-1&&end.indexOf('checkmate')===-1};return g}).then(result=>{if(result.committed&&result.snapshot.val()){const g=result.snapshot.val();const notify=g._notify;if(!notify)return;if(notify.isMate){showBoardNotification('CHECKMATE','checkmate',viewGameId,true);soundMgr.playCheckmate()}else if(notify.isStalemate){showBoardNotification('STALEMATE','stalemate',viewGameId,true);soundMgr.playDraw()}else if(notify.isDraw){showBoardNotification('DRAW','draw',viewGameId,true);soundMgr.playDraw()}else if(notify.isCheck){showBoardNotification('CHECK!','check',viewGameId,false);soundMgr.playCheck()}else if(notify.wasCapture){soundMgr.playCapture()}else{soundMgr.playMove()}db.ref('games/'+viewGameId+'/_notify').remove()}})}
 function resign(){if(!confirm('Resign this game?'))return;db.ref('games/'+viewGameId).transaction(g=>{if(!g||g.status!=='playing')return;const mc=(g.white&&g.white.token===token)?'w':(g.black&&g.black.token===token)?'b':null;if(!mc)return;g.status='finished';g.result=mc==='w'?'0-1 · White resigns, Black wins':'1-0 · Black resigns, White wins';return g}).then(result=>{if(result.committed){showBoardNotification('RESIGNED','resign',viewGameId,true);soundMgr.playResign()}})}
 function offerDraw(){db.ref('games/'+viewGameId+'/drawOffer').set(token)}
